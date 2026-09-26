@@ -52,3 +52,10 @@ def sample_encounters(events, n, seed, max_miss_m=5000.0):
     rng = np.random.default_rng(seed)
     idx = rng.integers(0, len(pool), size=n)
     return [dict(pool[i]) for i in idx]
+
+
+def geometry_pools(events, safe_lo_m=300.0, safe_hi_m=2000.0):
+    """(sigma_pairs [K, 2]: first/last-warning uncertainty per real event, safe_miss [M]: real safe miss distances)."""
+    pairs = np.array([[e["sigma0_m"], e["sigma_min_m"]] for e in events], dtype=np.float32)
+    safe = np.array([e["miss0_m"] for e in events if safe_lo_m <= e["miss0_m"] <= safe_hi_m], dtype=np.float32)
+    return pairs, safe

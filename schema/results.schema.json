@@ -33,7 +33,10 @@
       "additionalProperties": false
     },
     "plots": {"type": "array", "items": {"type": "string", "pattern": "^img/plots/[A-Za-z0-9_.-]+\\.png$"}},
-    "gate": {"enum": ["ship", "rules-only"]}
+    "gate": {"enum": ["ship", "rules-only"]},
+    "classification": {"type": "object"},
+    "significance": {"type": "object"},
+    "setup": {"type": "object"}
   },
   "additionalProperties": false
 }

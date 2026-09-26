@@ -5,6 +5,7 @@ Usage: python -m sim.evaluate --runs runs/seed1 runs/seed2 runs/seed3 --out web/
 import argparse
 import csv
 import json
+import math
 import logging
 from pathlib import Path
 
@@ -39,20 +40,26 @@ def ai_strategy(actor, norm):
     return act
 
 
-def run_strategy(fn, shield, n, device, sigma_pool=None, record=False):
-    env = ConjunctionEnv(n, device=device, seed=HELDOUT_SEED, stage=3, sigma_pool=sigma_pool, shield=shield)
+def run_strategy(fn, shield, n, device, sigma_pool=None, record=False, geom=None, low_risk=0.0, seed=HELDOUT_SEED,
+                 detail=False):
+    env = ConjunctionEnv(n, device=device, seed=seed, stage=3, sigma_pool=sigma_pool, shield=shield,
+                         geom_pool=geom, low_risk=low_risk)
     obs = env.reset()
     burns = torch.zeros(n, device=device)
     esc = torch.zeros(n, dtype=torch.bool, device=device)
+    burned_any = torch.zeros(n, dtype=torch.bool, device=device)
+    danger_any = torch.zeros(n, dtype=torch.bool, device=device)
     timing, yield_rec = [], []
     for _ in range(STEPS):
         t = env.t_min()
         led_gap = env.led - torch.gather(env.led, 1, env.threat)
         both_move = (env.cap != DEBRIS) & (torch.gather(env.cap, 1, env.threat) != DEBRIS) & env.acting()
+        danger_any |= (env.danger & env.mask).any(1)
         prop = fn(env, obs)
         obs, _, done, info = env.step(prop)
         did = info["dv"] > 0
         burns += did.float().sum(1)
+        burned_any |= did.any(1)
         esc |= info["escalated"].any(1)
         if record:
             timing += [t] * int(did.sum().item())
@@ -66,6 +73,12 @@ def run_strategy(fn, shield, n, device, sigma_pool=None, record=False):
         "burden_gini": round(gini(env.dv_spent[movers].tolist()), 4),
         "escalation_pct": round(100.0 * (info["hard"] | esc).float().mean().item(), 3),
     }
+    if detail:
+        pair = (env.miss < 20.0) & env.pair_ok
+        movable = (env.cap != DEBRIS) & ~env.silent & (env.fuel > 0)
+        avoidable = (pair & (movable[:, :, None] | movable[:, None, :])).flatten(1).any(1)
+        res["_detail"] = {"collision": info["collision"].clone(), "burned": burned_any, "danger": danger_any,
+                          "avoidable_collision": info["collision"] & avoidable}
     return res, timing, yield_rec
 
 
@@ -158,49 +171,105 @@ def plots(img_dir, cur, strategies, timing_ai, timing_rules, yield_rec):
     return names
 
 
+def wilson(k, n, z=1.96):
+    if n == 0:
+        return [None, None]
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return [round(100 * (c - h), 2), round(100 * (c + h), 2)]
+
+
+def two_proportion_p(k1, n1, k2, n2):
+    """Two-sided p-value for H0: equal collision rates (normal approximation)."""
+    p = (k1 + k2) / (n1 + n2)
+    se = math.sqrt(max(p * (1 - p) * (1 / n1 + 1 / n2), 1e-18))
+    z = abs(k1 / n1 - k2 / n2) / se
+    return round(math.erfc(z / math.sqrt(2)), 4)
+
+
+def classification(detail, truth_collide):
+    """Per-cluster classification view. truth = would collide if nobody moved; prediction = any burn."""
+    b, c, dang = detail["burned"], detail["collision"], detail["danger"]
+    t = truth_collide
+    tp, fp = int((t & b).sum()), int((~t & b).sum())
+    fn, tn = int((t & ~b).sum()), int((~t & ~b).sum())
+    n = int(t.numel())
+    resolved = int((t & ~c).sum())
+    safe = int((~c).sum())
+    avoid = int(detail["avoidable_collision"].sum())
+    return {
+        "scenarios": n, "would_collide": int(t.sum()), "flagged_dangerous": int(dang.sum()),
+        "accuracy_pct": round(100 * safe / n, 3), "accuracy_ci95": wilson(safe, n),
+        "precision_pct": round(100 * tp / max(1, tp + fp), 2), "precision_ci95": wilson(tp, tp + fp),
+        "recall_pct": round(100 * resolved / max(1, int(t.sum())), 2), "recall_ci95": wilson(resolved, int(t.sum())),
+        "false_alarm_pct": round(100 * fp / max(1, fp + tn), 2), "specificity_pct": round(100 * tn / max(1, fp + tn), 2),
+        "confusion": {"TP": tp, "FP": fp, "FN": fn, "TN": tn},
+        "collisions": int(c.sum()), "avoidable_collisions": avoid, "unavoidable_collisions": int(c.sum()) - avoid,
+    }
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", nargs="+", required=True)
-    ap.add_argument("--n", type=int, default=1000)
+    ap.add_argument("--n", type=int, default=10000)
     ap.add_argument("--out", default="web/data")
     ap.add_argument("--img", default="web/img/plots")
     ap.add_argument("--kelvins", default=None)
+    ap.add_argument("--geometry", choices=["synthetic", "kelvins"], default="kelvins")
+    ap.add_argument("--low-risk", type=float, default=0.3)
     args = ap.parse_args(argv)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    pool = None
+    pool = geom = None
     if args.kelvins:
-        from .train_mappo import sigma_pool_from_kelvins
+        from .train_mappo import geometry_from_kelvins, sigma_pool_from_kelvins
         pool = sigma_pool_from_kelvins(args.kelvins)
+        geom = geometry_from_kelvins(args.kelvins) if args.geometry == "kelvins" else None
+    kw = {"geom": geom, "low_risk": args.low_risk}
 
     best = None
     for r in args.runs:
         actor, norm, _ = load_policy(r, device)
-        res, _, _ = run_strategy(ai_strategy(actor, norm), True, args.n, device, pool)
+        res, _, _ = run_strategy(ai_strategy(actor, norm), True, min(args.n, 2000), device, pool, **kw)
         log(logger, logging.INFO, "seed result", run=r, **res)
         key = (res["collisions_pct"], res["dv_mean_ms"])
         if best is None or key < best[0]:
             best = (key, r, res)
     _, best_run, _ = best
     actor, norm, _ = load_policy(best_run, device)
-    strategies, timing_rules = [], []
+    none_res, _, _ = run_strategy(BASELINES["Do nothing"][0], False, args.n, device, pool, detail=True, **kw)
+    truth = none_res.pop("_detail")["collision"]
+    strategies, timing_rules, details = [], [], {}
     for name, (fn, shield) in BASELINES.items():
-        res, timing, _ = run_strategy(fn, shield, args.n, device, pool, record=name.startswith("Rules"))
+        res, timing, _ = run_strategy(fn, shield, args.n, device, pool, record=name.startswith("Rules"), detail=True, **kw)
+        details[name] = res.pop("_detail")
         if name.startswith("Rules"):
             timing_rules = timing
         strategies.append({"name": name, **res})
-    ai_res, timing_ai, yield_rec = run_strategy(ai_strategy(actor, norm), True, args.n, device, pool, record=True)
+    ai_res, timing_ai, yield_rec = run_strategy(ai_strategy(actor, norm), True, args.n, device, pool, record=True,
+                                                detail=True, **kw)
+    details[AI_NAME] = ai_res.pop("_detail")
     strategies.append({"name": AI_NAME, **ai_res})
     rules = next(s for s in strategies if s["name"].startswith("Rules"))
     gate = "ship" if (ai_res["collisions_pct"] <= rules["collisions_pct"]
                       and ai_res["dv_mean_ms"] <= rules["dv_mean_ms"] * 1.1) else "rules-only"
+    rules_name = rules["name"]
+    cls = {name: classification(d, truth) for name, d in details.items() if name != "Do nothing"}
+    k_ai, k_r = cls[AI_NAME]["avoidable_collisions"], cls[rules_name]["avoidable_collisions"]
+    significance = {"test": "two-proportion z-test on avoidable collisions, AI + shield vs rules only",
+                    "ai": k_ai, "rules": k_r, "n": args.n, "p_value": two_proportion_p(k_ai, args.n, k_r, args.n)}
     cur = curves(args.runs)
     names = plots(args.img, cur, strategies, timing_ai, timing_rules, yield_rec)
-    results = {"strategies": strategies, "curves": cur, "plots": names, "gate": gate}
+    results = {"strategies": strategies, "curves": cur, "plots": names, "gate": gate,
+               "classification": cls, "significance": significance,
+               "setup": {"scenarios": args.n, "geometry": args.geometry, "low_risk_share": args.low_risk}}
     contracts.write_json("results", results, Path(args.out) / "results.json")
     (Path(args.out).parent.parent / "runs_best.txt").write_text(str(best_run))
     log(logger, logging.INFO, "gate", decision=gate, best_run=best_run)
     for s in strategies:
         log(logger, logging.INFO, "strategy", **s)
+    print(json.dumps({"classification": cls, "significance": significance}, indent=1))
 
 
 if __name__ == "__main__":

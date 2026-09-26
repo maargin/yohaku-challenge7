@@ -22,6 +22,7 @@ PUB, COM, NONE = 0, 1, 2
 LOW_FUEL, FREE_RIDER, FUEL_TIE, LEDGER_TIE = 0.20, -3.0, 0.05, 0.5
 DEADLINE_MIN = -60.0
 MANOEUVRE_PC = 1e-4
+DILUTION_PC = 1e-3            # worst-case Pc that flags a close predicted pass hidden by large uncertainty
 PC_HIGH = 1e-3
 SECONDARY_M = 1000.0
 MEAN_MOTION = 0.0011           # rad/s at ~550 km
@@ -41,6 +42,18 @@ REWARDS = {
 def pc_t(miss, sigma, radius=physics.HARD_BODY_RADIUS_M):
     s2 = sigma * sigma
     return torch.clamp((radius * radius) / (2.0 * s2) * torch.exp(-(miss * miss) / (2.0 * s2)), 0.0, 1.0)
+
+
+def pc_worst(miss, radius=physics.HARD_BODY_RADIUS_M):
+    """Largest Pc over all possible uncertainties for this miss distance (reached at sigma = miss)."""
+    d2 = torch.clamp(miss * miss, min=1e-6)
+    return torch.clamp((radius * radius) / (2.0 * d2) * math.exp(-0.5), 0.0, 1.0)
+
+
+def is_dangerous(pc, miss, sigma):
+    """Manoeuvre-worthy: Pc above the operational threshold, or a close pass diluted by large uncertainty."""
+    diluted = (sigma > 2.0 * miss) & (pc_worst(miss) > DILUTION_PC)
+    return (pc > MANOEUVRE_PC) | diluted
 
 
 def who_yields(cap_i, pur_i, fuel_i, led_i, sil_i, idx_i, cap_j, pur_j, fuel_j, led_j, sil_j, idx_j):
@@ -69,8 +82,14 @@ def who_yields(cap_i, pur_i, fuel_i, led_i, sil_i, idx_i, cap_j, pur_j, fuel_j, 
 
 
 class ConjunctionEnv:
-    def __init__(self, n_clusters, device="cpu", seed=0, stage=3, sigma_pool=None, shield=True, reward="v1"):
+    def __init__(self, n_clusters, device="cpu", seed=0, stage=3, sigma_pool=None, shield=True, reward="v1",
+                 geom_pool=None, low_risk=0.0):
+        """geom_pool: optional (sigma_pairs [K, 2], safe_miss [M]) from real Kelvins events.
+        low_risk: share of primary pairs that are safe passes (real Kelvins miss distances 300 m-2 km)."""
         self.N, self.device, self.stage, self.shield = n_clusters, torch.device(device), stage, shield
+        self.low_risk = float(low_risk)
+        self.geom_pool = None if geom_pool is None else tuple(
+            torch.as_tensor(x, dtype=torch.float32, device=torch.device(device)) for x in geom_pool)
         self.rw = REWARDS[reward]
         self.gen = torch.Generator(device=self.device).manual_seed(int(seed))
         self.sigma_pool = None if sigma_pool is None else torch.as_tensor(sigma_pool, dtype=torch.float32,
@@ -117,13 +136,27 @@ class ConjunctionEnv:
             s0 = torch.exp(math.log(800.0) + 0.6 * torch.randn(N, A, A, generator=self.gen, device=dev))
         s0 = torch.clamp(s0, 150.0, 3000.0)
         sym = lambda x: torch.triu(x, 1) + torch.triu(x, 1).transpose(1, 2)
+        s_min = s0 * self._u(N, A, A, lo=0.08, hi=0.3)
+        if self.geom_pool is not None:
+            pairs, _ = self.geom_pool
+            k = pairs[self._randint(0, len(pairs), (N, A, A))]
+            s0 = torch.clamp(k[..., 0], 100.0, 5000.0)
+            s_min = torch.minimum(torch.clamp(k[..., 1], 30.0, 5000.0), s0)
         self.sigma0 = sym(s0) + torch.eye(A, device=dev)[None] * 1000.0
-        self.sigma_min = sym(s0 * self._u(N, A, A, lo=0.08, hi=0.3)) + torch.eye(A, device=dev)[None] * 100.0
+        self.sigma_min = sym(s_min) + torch.eye(A, device=dev)[None] * 100.0
         sign = torch.where(self._u(N, A, A) < 0.5, -1.0, 1.0)
         m0_far = sign * self._u(N, A, A, lo=300.0, hi=3000.0)
         p0_far = self._u(N, A, A, lo=0.0, hi=400.0)
         m0_near = self._u(N, A, A, lo=-150.0, hi=150.0)
         p0_near = self._u(N, A, A, lo=0.0, hi=40.0)
+        if self.low_risk > 0:
+            safe = self._u(N, A, A) < self.low_risk
+            if self.geom_pool is not None and len(self.geom_pool[1]):
+                safe_miss = self.geom_pool[1][self._randint(0, len(self.geom_pool[1]), (N, A, A))]
+            else:
+                safe_miss = self._u(N, A, A, lo=300.0, hi=2000.0)
+            m0_near = torch.where(safe, sign * safe_miss, m0_near)
+            p0_near = torch.where(safe, self._u(N, A, A, lo=0.0, hi=100.0), p0_near)
         pp = self.idx ^ 1
         pp = torch.where(pp[None, :] < n[:, None], pp[None, :].expand(N, A), torch.zeros(N, A, dtype=torch.long, device=dev))
         self.pp = pp
@@ -170,6 +203,8 @@ class ConjunctionEnv:
         g = lambda x: torch.gather(x, 1, self.threat)
         self.pc_threat = torch.gather(self.pc, 2, self.threat[:, :, None]).squeeze(2)
         self.miss_threat = torch.gather(self.miss, 2, self.threat[:, :, None]).squeeze(2)
+        self.sigma_threat = torch.gather(self.sigma, 2, self.threat[:, :, None]).squeeze(2)
+        self.danger = is_dangerous(self.pc_threat, self.miss_threat, self.sigma_threat)
         self.has_y, self.i_yields = who_yields(self.cap, self.pur, self.fuel, self.led, self.silent, self.idx[None].expand_as(self.cap),
                                                g(self.cap), g(self.pur), g(self.fuel), g(self.led), g(self.silent), self.threat)
 
@@ -223,7 +258,7 @@ class ConjunctionEnv:
         c3 = self.i_yields & (prop == REQUEST_YIELD)
         executed = torch.where(c3 | (prop == REQUEST_YIELD), torch.full_like(prop, HOLD), executed)
         executed = torch.where(prop == ESCALATE, torch.full_like(prop, HOLD), executed)
-        forced = self.i_yields & ~self.burned & (t >= DEADLINE_MIN) & (self.pc_threat > MANOEUVRE_PC) & \
+        forced = self.i_yields & ~self.burned & (t >= DEADLINE_MIN) & self.danger & \
             ~((executed >= SMALL_OPEN) & (executed <= RADIAL))
         executed = torch.where(forced, torch.full_like(prop, SMALL_OPEN), executed)
         conflict = (c1 | c2 | c3 | forced) & act

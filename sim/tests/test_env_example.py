@@ -70,3 +70,26 @@ def test_v2_reward_penalises_repeat_burns_more_than_v1():
             tot += r[:, 0]
         totals[rw] = tot.mean().item()
     assert totals["v2"] < totals["v1"]
+
+
+def test_dilution_flags_close_pass_with_huge_uncertainty():
+    from sim.env_torch import is_dangerous
+    pc = torch.tensor([1e-6, 1e-6, 1e-6])
+    miss = torch.tensor([10.0, 10.0, 2000.0])
+    sigma = torch.tensor([3000.0, 5.0, 3000.0])
+    assert is_dangerous(pc, miss, sigma).tolist() == [True, False, False]
+
+
+def test_low_risk_share_creates_safe_passes_that_rules_do_not_burn_for():
+    import numpy as np
+    from sim.baselines import rules_only
+    geom = (np.array([[300.0, 60.0], [400.0, 80.0]], dtype=np.float32), np.array([1500.0, 1900.0], dtype=np.float32))
+    env = ConjunctionEnv(400, device="cpu", seed=9, stage=2, geom_pool=geom, low_risk=1.0)
+    obs = env.reset()
+    assert (env.m0[:, 0, 1].abs() >= 300).all()
+    burned = torch.zeros(env.N, dtype=torch.bool)
+    for _ in range(STEPS):
+        obs, _, _, info = env.step(rules_only(env, obs))
+        burned |= (info["dv"] > 0).any(1)
+    assert burned.float().mean() < 0.05
+    assert not info["collision"].any()

@@ -56,6 +56,11 @@ class RunningNorm:
         return torch.clamp((x - self.mean) / torch.sqrt(self.var + 1e-8), -10.0, 10.0)
 
 
+def geometry_from_kelvins(path):
+    from .scenarios import event_table, geometry_pools, load_kelvins
+    return geometry_pools(event_table(load_kelvins(path)))
+
+
 def sigma_pool_from_kelvins(path, limit=20000):
     from .scenarios import event_table, load_kelvins
     ev = event_table(load_kelvins(path))
@@ -116,6 +121,7 @@ def train(args):
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     pool = sigma_pool_from_kelvins(args.kelvins) if args.kelvins else None
+    geom = geometry_from_kelvins(args.kelvins) if (args.kelvins and args.geometry == 'kelvins') else None
     actor, critic = Actor().to(device), Critic().to(device)
     opt = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()), lr=args.lr)
     norm = RunningNorm(OBS_DIM, device)
@@ -131,7 +137,8 @@ def train(args):
     try:
         while time.time() - t0 < args.minutes * 60:
             env = ConjunctionEnv(args.envs, device=device, seed=args.seed * 100003 + it, stage=stage,
-                                 sigma_pool=pool, shield=True, reward=args.reward)
+                                 sigma_pool=pool, shield=True, reward=args.reward, geom_pool=geom,
+                                 low_risk=args.low_risk)
             buf, stats, raw = rollout(env, actor, norm, device, agent_oh)
             m = buf["mask"]
             norm.update(raw[m])
@@ -197,7 +204,8 @@ def _save(out, actor, critic, norm, stage, total_steps, args):
                 "obs_var": norm.var.cpu(), "stage": stage, "timesteps": total_steps, "seed": args.seed},
                Path(out) / "final.pt")
     (Path(out) / "meta.json").write_text(json.dumps({"stage": stage, "timesteps": total_steps, "seed": args.seed,
-                                                     "reward": args.reward}))
+                                                     "reward": args.reward,
+                                                     "geometry": args.geometry, "low_risk": args.low_risk}))
 
 
 def main(argv=None):
@@ -216,6 +224,8 @@ def main(argv=None):
     ap.add_argument("--kelvins", default=None)
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--reward", choices=["v1", "v2"], default="v1")
+    ap.add_argument("--geometry", choices=["synthetic", "kelvins"], default="synthetic")
+    ap.add_argument("--low-risk", type=float, default=0.0)
     train(ap.parse_args(argv))
 
 

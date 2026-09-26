@@ -37,11 +37,37 @@ export function init() {
   const ai = r.strategies.find((s) => s.name === AI);
   const rules = r.strategies.find((s) => s.name.startsWith('Rules'));
   if (ai && rules) {
-    const fewer = rules.collisions_pct > 0 ? Math.round((1 - ai.collisions_pct / rules.collisions_pct) * 100) : 0;
-    summary.textContent = r.gate === 'ship'
-      ? `Yes, modestly: the shared AI behind the rules shield had ${ai.collisions_pct}% collisions against ${rules.collisions_pct}% for the rules alone (${fewer}% fewer), using the same fuel (${ai.dv_mean_ms} vs ${rules.dv_mean_ms} m/s per event). Doing nothing leads to collisions in ${r.strategies[0].collisions_pct}% of cases.`
-      : `Not yet: the rules alone remain the product. The shared AI is shown as an experiment (${ai.collisions_pct}% collisions, ${ai.dv_mean_ms} m/s per event, against ${rules.collisions_pct}% and ${rules.dv_mean_ms} m/s for the rules).`;
+    const cls = r.classification || {};
+    const sig = r.significance;
+    const ca = cls[AI];
+    const cr = cls[rules.name];
+    const n = r.setup ? r.setup.scenarios.toLocaleString('en-GB') : 'the held-out';
+    let text;
+    if (ca && cr && sig) {
+      const fewer = cr.avoidable_collisions > 0 ? Math.round((1 - ca.avoidable_collisions / cr.avoidable_collisions) * 100) : 0;
+      const sigText = sig.p_value < 0.05 ? `statistically significant (p = ${sig.p_value})` : `not statistically significant at this sample size (p = ${sig.p_value})`;
+      text = `On ${n} new scenarios, the shared AI behind the rules shield ended ${ca.accuracy_pct}% of them safely, against ${cr.accuracy_pct}% for the rules alone. `
+        + `Avoidable collisions: ${ca.avoidable_collisions} vs ${cr.avoidable_collisions} (${fewer}% fewer; ${sigText}). Fuel per event: ${ai.dv_mean_ms} vs ${rules.dv_mean_ms} m/s.`;
+    } else {
+      text = `The shared AI had ${ai.collisions_pct}% collisions against ${rules.collisions_pct}% for the rules alone, at ${ai.dv_mean_ms} vs ${rules.dv_mean_ms} m/s per event.`;
+    }
+    summary.textContent = text;
     summary.append(' ', h('span', { class: 'gate', 'data-testid': 'gate-badge', text: r.gate === 'ship' ? 'Gate passed: AI ships behind the shield' : 'Gate: rules-only' }));
+    if (ca && cr) {
+      const pct = (x, ci) => `${x}%${ci && ci[0] !== null ? ` (${ci[0]}–${ci[1]})` : ''}`;
+      const table = h('table', { class: 'results', 'data-testid': 'metrics-table', style: { marginTop: '18px' } },
+        h('thead', {}, h('tr', {}, ...['Metric (95% CI)', AI, rules.name].map((t) => h('th', { scope: 'col', text: t })))),
+        h('tbody', {},
+          ...[
+            ['Accuracy — scenarios ending safely', pct(ca.accuracy_pct, ca.accuracy_ci95), pct(cr.accuracy_pct, cr.accuracy_ci95)],
+            ['Recall — would-collide scenarios resolved', pct(ca.recall_pct, ca.recall_ci95), pct(cr.recall_pct, cr.recall_ci95)],
+            ['Precision — burns in would-collide scenarios', pct(ca.precision_pct, ca.precision_ci95), pct(cr.precision_pct, cr.precision_ci95)],
+            ['False-alarm rate — burns in safe scenarios', `${ca.false_alarm_pct}%`, `${cr.false_alarm_pct}%`],
+            ['Collisions (avoidable / unavoidable)', `${ca.avoidable_collisions} / ${ca.unavoidable_collisions}`, `${cr.avoidable_collisions} / ${cr.unavoidable_collisions}`],
+          ].map((row) => h('tr', {}, ...row.map((c, k) => h('td', { text: c, style: k === 0 ? { fontFamily: 'var(--font-body)' } : {} }))))));
+      summary.after(table);
+      table.after(h('p', { class: 'small muted', text: 'Unavoidable collisions are between two objects that cannot move (debris, silent or out of fuel). Low precision is expected: under uncertainty operators must act on every risky pass, and only some would really have collided.' }));
+    }
   }
   clear(tbody);
   for (const s of r.strategies) {

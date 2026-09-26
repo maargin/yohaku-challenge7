@@ -70,6 +70,11 @@ def yields(s):
     return out
 
 
+def dangerous(pc, miss, sigma, manoeuvre_pc=1e-4, dilution_pc=1e-3):
+    worst = min(1.0, (physics.HARD_BODY_RADIUS_M ** 2) / (2.0 * max(miss * miss, 1e-6)) * math.exp(-0.5))
+    return pc > manoeuvre_pc or (sigma > 2.0 * miss and worst > dilution_pc)
+
+
 def shield_step(s, prop, deadline_min=-60.0, manoeuvre_pc=1e-4):
     """Executed actions and conflicts per BR-U2-1 (the fuel limit is applied later, in step)."""
     thr, pc = threats(s)
@@ -92,7 +97,9 @@ def shield_step(s, prop, deadline_min=-60.0, manoeuvre_pc=1e-4):
             e, c = HOLD, y[i]
         elif p == ESCALATE:
             e = HOLD
-        if (y[i] and not s["burned"][i] and s["t_min"] >= deadline_min and pc[i][thr[i]] > manoeuvre_pc
+        j = thr[i]
+        risky = dangerous(pc[i][j], _miss(s, i, j), _sigma(s, i, j), manoeuvre_pc)
+        if (y[i] and not s["burned"][i] and s["t_min"] >= deadline_min and risky
                 and not (SMALL_OPEN <= e <= RADIAL)):
             e, c = SMALL_OPEN, True
         executed.append(e)
