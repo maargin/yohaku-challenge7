@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+# Data & artefacts
+data/raw/
+*.zip
+checkpoints/
+runs/
+*.pt
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
