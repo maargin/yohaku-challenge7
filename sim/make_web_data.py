@@ -107,12 +107,18 @@ def load_specs(spec_dir=SPEC_DIR):
     return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(Path(spec_dir).glob("*.json"))]
 
 
-def build_episodes(specs):
+def build_episodes(specs, policy=None):
     episodes = []
+    proposer = None
+    if policy is not None:
+        from .ai_proposer import make_proposer
+        proposer = make_proposer(policy)
     for spec in specs:
         if "email_world" in spec:
             episodes.append(run_episode(spec, variant="scripted"))
         episodes.append(run_episode(spec, variant="rules"))
+        if proposer is not None:
+            episodes.append(run_episode(spec, variant="ai", proposer=proposer))
     return episodes
 
 
@@ -122,6 +128,7 @@ def main(argv=None):
     ap.add_argument("--socrates", help="CelesTrak SOCRATES CSV")
     ap.add_argument("--out", default="web/data")
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--policy", help="exported policy.json; adds AI-variant episodes")
     args = ap.parse_args(argv)
     out = Path(args.out)
 
@@ -136,7 +143,8 @@ def main(argv=None):
         soc = build_socrates(args.socrates)
         contracts.write_json("socrates_top", soc, out / "socrates_top.json")
         log(logger, logging.INFO, "wrote socrates_top", count=len(soc))
-    eps = build_episodes(load_specs())
+    policy = contracts.read_json("policy", args.policy) if args.policy else None
+    eps = build_episodes(load_specs(), policy)
     contracts.write_json("episodes", eps, out / "episodes.json")
     log(logger, logging.INFO, "wrote episodes", count=len(eps))
 

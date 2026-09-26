@@ -442,7 +442,7 @@ All files live in `web/data/`. Only real data files are produced (no mocks); eac
 - **`episodes.json` optional fields (added in v1.3, backward-compatible)** — item `variant`: `"scripted" | "rules" | "ai"`; step `verdict`: `{ "yielder", "rule", "reason" }`; step `note`: short narrative text; escalation step `branches`: `{ "approve": [steps], "override": [steps], "stop": [steps] }`, the precomputed continuation for each human choice.
 - **`policy.json`** — `{ "arch": [24, 64, 64, 7], "activation": "tanh", "obs_mean": [24], "obs_std": [24], "layers": [{ "W": [[...]], "b": [...] }], "actions": ["hold", "small_open", "large_open", "small_close", "radial", "request_yield", "escalate"] }`
 - **`testvec.json`** — `[{ "obs": [24], "logits": [7] }]` (100 entries, for the parity test)
-- **`explanations.json`** — `{ "<episodeId>:<stepIndex>": "plain-English text" }`
+- **`explanations.json`** — `{ "<episodeId>.<variant>:<stepIndex>": "plain-English text" }` (variant = scripted / rules / ai)
 - **`results.json`** — `{ "strategies": [{ "name", "collisions_pct", "dv_mean_ms", "manoeuvres_per_event", "burden_gini", "escalation_pct" }], "curves": { "timesteps": [...], "collision_rate": [...], "dv_mean": [...], "fairness_gap": [...] }, "plots": ["img/plots/*.png"] }`
 - **`socrates_top.json`** — `[{ "id1", "name1", "id2", "name2", "tca": "ISO", "range_km", "rel_speed_kms", "max_prob" }]`
 - **Live API (deferred, §6.2)** — base URL from `web/config.local.js` (`window.LIVE_API = "https://..."`); endpoints as §7.1; `/simulate` returns the `episodes.json` item shape; `/explain` returns `{ "text": "..." }`; `/benchmark` returns the `results.json` `strategies` shape.

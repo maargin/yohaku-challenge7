@@ -1,0 +1,4 @@
+# AI layer (U2) — exact versions verified on the training server (Python 3.10, CUDA 12.9 build)
+-r requirements.txt
+torch==2.11.0
+matplotlib==3.10.7

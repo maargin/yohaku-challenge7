@@ -18,3 +18,5 @@ data/raw/
 *.egg-info/
 .pytest_cache/
 .hypothesis/
+runs_best.txt
+sbom.cdx.json

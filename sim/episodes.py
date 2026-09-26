@@ -10,7 +10,8 @@ import math
 from . import handshake as hs
 from . import ledger as lg
 from . import physics, rules, shield
-from .domain import ACTIONS, COMMONS, DV_BY_ACTION, HOLD, LARGE_OPEN, SMALL_OPEN, Declaration, RegistryEntry
+from .domain import (ACTIONS, COMMONS, DV_BY_ACTION, HOLD, LARGE_OPEN, RADIAL, REQUEST_YIELD, SMALL_CLOSE, SMALL_OPEN,
+                     Declaration, RegistryEntry)
 
 STEP_MIN = 10
 START_MIN = -240
@@ -121,13 +122,25 @@ def run_episode(spec, variant="rules", human_choice="approve", with_branches=Tru
                 for aid in sorted(ctx.silent):
                     led = lg.record_silence(led, ctx.registry[aid].operator, t)
 
-        policy_action = policy_conf = None
-        if verdict is not None and proposer is not None and not executed:
-            policy_action, policy_conf = proposer({"t_min": t, "pc": p, "miss_m": miss, "sigma_m": sigma,
-                                                   "yielder": yielder})
+        ai, policy_conf, conflict = {}, None, False
+        if proposer is not None and verdict is not None:
+            bals = lg.balances(led)
+            ai = proposer({"t_min": t, "pc": p, "miss_m": miss, "sigma_m": sigma, "sigma0_m": enc["sigma0_m"],
+                           "yielder": yielder, "agents": {aid: {
+                               "capability": ctx.registry[aid].capability, "fuel": float(ctx.by_id[aid]["fuel"]),
+                               "ledger": bals.get(ctx.registry[aid].operator, 0.0), "silent": aid in ctx.silent,
+                               "intent": "burn" if dv_used[aid] > 0 else "hold",
+                               "offset_m": sum(physics.separation_gain_m(dv, lead) for dv, lead in burns)
+                               if aid == yielder else 0.0} for aid in (a_id, b_id)}})
+            for aid, (act, probs) in ai.items():
+                if not ctx.can_talk(aid) or executed:
+                    continue
+                is_burn = SMALL_OPEN <= act <= RADIAL
+                if (aid != yielder and is_burn) or (aid == yielder and act in (SMALL_CLOSE, REQUEST_YIELD)):
+                    conflict = True
+            if yielder in ai:
+                policy_conf = max(ai[yielder][1])
         if verdict is not None and not escalated and not executed:
-            verdict_action = SMALL_OPEN if yielder else HOLD
-            _, conflict = shield.arbitrate(policy_action, verdict_action)
             fuel_frac = 0.0
             if yielder:
                 fuel = float(ctx.by_id[yielder]["fuel"])
@@ -158,7 +171,17 @@ def run_episode(spec, variant="rules", human_choice="approve", with_branches=Tru
             else:
                 decided = True
 
-        if verdict is not None and decided and not executed and (steps and steps[-1].get("verdict") is not None):
+        ready = verdict is not None and decided and not executed and (steps and steps[-1].get("verdict") is not None)
+        if ready and variant == "ai" and yielder is not None and yielder in ai:
+            y_act = ai[yielder][0]
+            if SMALL_OPEN <= y_act <= RADIAL and y_act != SMALL_CLOSE:
+                dv_burn = DV_BY_ACTION[y_act]
+            elif t < rules.stand_on_deadline(0.0):
+                ready = False
+            else:
+                dv_burn = DV_BY_ACTION[SMALL_OPEN]
+                notes.setdefault(t, "Stand-on deadline reached: the shield forces the agreed yielder to burn")
+        if ready:
             if yielder is not None:
                 if ctx.can_talk(yielder):
                     msgs.append(ctx.msg(t, yielder, stand_on, "ACK", f"will burn +{dv_burn} m/s along-track"))
@@ -166,7 +189,8 @@ def run_episode(spec, variant="rules", human_choice="approve", with_branches=Tru
                     msgs.append(ctx.msg(t, stand_on, yielder, "DO-NOT-MOVE", "holding course"))
                 burns.append((dv_burn, -t))
                 dv_used[yielder] += dv_burn
-                actions[yielder] = SMALL_OPEN
+                actions[yielder] = SMALL_OPEN if variant != "ai" else next(
+                    k for k, v in DV_BY_ACTION.items() if v == dv_burn and k != SMALL_CLOSE)
                 if ctx.can_talk(yielder):
                     msgs.append(ctx.msg(t, yielder, stand_on, "EXECUTED", f"burn done, {dv_burn} m/s"))
                 if stand_on is not None and ctx.can_talk(stand_on):
@@ -189,7 +213,8 @@ def run_episode(spec, variant="rules", human_choice="approve", with_branches=Tru
         state = hs.apply_all(state, msgs)
         step = {
             "t_min": float(t), "pc": p, "miss_m": round(miss, 3), "sigma_m": round(sigma, 3),
-            "actions": {aid: {"action": act, "probs": _one_hot(act)} for aid, act in actions.items()},
+            "actions": {aid: {"action": act, "probs": ai[aid][1] if aid in ai else _one_hot(act)}
+                        for aid, act in actions.items()},
             "messages": [m.to_dict() for m in msgs],
             "escalation": esc,
         }
