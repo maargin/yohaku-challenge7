@@ -37,3 +37,11 @@ Collision probabilities in this project are **illustrative**: dynamics are linea
 
 ## Licence
 MIT — see [`LICENSE`](LICENSE).
+
+## Deploy (Cloudflare Pages)
+```bash
+npx wrangler login              # once, opens a browser
+npm run deploy                  # runs the predeploy check, then uploads web/ only
+npm run check:headers -- https://<project>.pages.dev/
+```
+Security headers come from `web/_headers`. Before making the repository public, run `bash tools/prepublish_check.sh`.

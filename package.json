@@ -6,7 +6,11 @@
   "description": "Static website and JS tests for the Challenge 7 orbital coordination prototype",
   "license": "MIT",
   "scripts": {
-    "test": "node --test \"web/tests/**/*.test.mjs\""
+    "test": "node --test \"web/tests/**/*.test.mjs\"",
+    "predeploy": "node tools/predeploy_check.mjs",
+    "deploy": "wrangler pages deploy web --project-name yohaku-challenge7 --branch main --commit-dirty=true",
+    "check:headers": "node tools/check_headers.mjs",
+    "serve": "node tools/serve.mjs 8000"
   },
   "devDependencies": {
     "@fontsource/fraunces": "5.3.0",
@@ -15,6 +19,7 @@
     "chart.js": "4.5.1",
     "fast-check": "4.3.0",
     "globe.gl": "2.46.2",
-    "satellite.js": "7.1.0"
+    "satellite.js": "7.1.0",
+    "wrangler": "4.141.0"
   }
 }

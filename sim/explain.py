@@ -1,4 +1,4 @@
-"""Plain-English explanations (B15) from a local open-weight LLM behind an OpenAI-compatible endpoint.
+"""Plain-English explanations (B15) from a local open-weight LLM behind an HTTP chat-completions endpoint (e.g. vLLM).
 
 Only structured episode fields go into prompts (no secrets, no infrastructure details).
 Output is length-limited, schema-validated, and any failure falls back to a template.
