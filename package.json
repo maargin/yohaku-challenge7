@@ -1,0 +1,14 @@
+{
+  "name": "yohaku-challenge7",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Static website and JS tests for the Challenge 7 orbital coordination prototype",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test \"web/tests/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "fast-check": "4.3.0"
+  }
+}

@@ -1,6 +1,6 @@
 # [Project Name TBD] — Product Requirements Document
 
-*Version 1.2 · 26 Sep 2026 · Status: final for submission · Working placeholder: **"the System"** (final name to be chosen by the team before the video is recorded)*
+*Version 1.3 · 26 Sep 2026 · Status: final for submission · Working placeholder: **"the System"** (final name to be chosen by the team before the video is recorded)*
 
 This PRD is a living document: it is updated as the build progresses and becomes the record of the full implementation.
 
@@ -33,16 +33,16 @@ As AI takes over more of these decisions, key questions remain open:
 
 ## 3. Solution overview
 
-The System is a coordination system inspired by mycorrhizal (fungal) networks.
+The System is a coordination system for shared orbit. The challenge's mycelium analogy was the starting reference; the product itself uses plain orbital-coordination language.
 
-| Fungal network | The System |
+| Idea (from the challenge reference) | The System |
 |---|---|
 | Hyphal tips sense and respond locally | Every satellite carries the **same small trained AI policy**, which senses risk and decides on its own |
-| One connected network | Satellites broadcast intent to their neighbours over "hyphae" links (shared data plus a handshake) |
+| One connected network | Satellites broadcast intent to their neighbours over risk links (shared data plus a handshake) |
 | A market with sanctions (Kiers et al. 2011) | A **fairness ledger** rewards those who yield and penalises free-riders |
 | What nature lacks | Shared **right-of-way rules**, **human escalation**, **responsibility allocation**, **governed learning** and **obligations to the future (NARETU)** |
 
-**Tagline:** *"Borrow the fungus's architecture, not its morality."*
+**Tagline:** *"Local decisions. Shared rules. Human oversight."*
 
 ## 4. Goals and non-goals
 
@@ -69,7 +69,7 @@ The System is a coordination system inspired by mycorrhizal (fungal) networks.
 | ID | Feature | Description | Acceptance criteria |
 |---|---|---|---|
 | F1 | **Space Map** | 3D Earth showing about 3,000 real objects from a CelesTrak snapshot, coloured by type: grey = debris, blue = manoeuvrable, green = autonomous, gold = crewed. Time-lapse playback. | Loads in under 5 s; at least 30 fps; legend shown; credit "Data: CelesTrak" |
-| F2 | **Danger Threads (hyphae)** | Glowing arcs link objects on a close pass. They get thicker and brighter as risk rises and fade afterwards (a slime-mould-style reinforce-and-decay rule). | Thread lifecycle visible for every scripted event |
+| F2 | **Risk Links** | Glowing arcs link objects on a close pass. They get thicker and brighter as risk rises and fade afterwards (a slime-mould-style reinforce-and-decay rule). | Thread lifecycle visible for every scripted event |
 | F3 | **Onboard AI Brain** | A trained, shared RL policy runs live in the browser for each satellite. A panel shows what the satellite sees, its action probabilities and the action it chose. | Browser output matches Python within 1e-4 on 100 test vectors |
 | F4 | **Who-Yields Rules** | Right-of-way rules in the style of maritime COLREGs. Priority: debris and non-manoeuvrable objects hold course, then crewed, then low-fuel, then science / public-good, then commercial. Tie-breaks: larger fuel margin yields, then ledger balance, then a deterministic ID. The object holding course must act by a deadline if the other side stays silent. A counterpart that does not answer the handshake is treated as non-manoeuvrable, and its silence is recorded in the ledger. Priority class and fuel state are declared through the handshake and must match the operator's registered, state-verified class; a false declaration is a ledger penalty and evidence of fault (F14). | Deterministic: both satellites compute the same verdict **from the shared handshake data only**, never from private estimates |
 | F5 | **Intent Handshake Feed** | Chat-style log of PROPOSE / ACK / DO-NOT-MOVE / EXECUTED / ESCALATE messages | Visible for each event, with timestamps |
@@ -93,7 +93,7 @@ These stay in the design but are cut from the 27 September build. The Live API i
 
 | ID | Feature | Description |
 |---|---|---|
-| F13 | **Where the Analogy Breaks** | Table of where the fungal analogy holds, bends and breaks (Simard et al. 1997; Kiers et al. 2011; Karst et al. 2023) |
+| F13 | **Where the Analogy Breaks** (video only) | A short beat in the 2-minute video on where the mycelium analogy holds, bends and breaks (Simard et al. 1997; Kiers et al. 2011; Karst et al. 2023). Not shown on the website. |
 | F14 | **Responsibility Matrix** | Failure modes against operator / AI developer / data provider / licensing state / international body. Evidence of fault: whether the rules were followed, and what the ledger shows. An operator that failed to share data or answer the handshake carries presumptive responsibility for the outcome. |
 | F15 | **Learning Governance** | The network logs every case. Changes to rules or models need approval from an independent "Orbital Incident Board", and every version is recorded. |
 | F16 | **NARETU Obligations Charter** | What each actor owes, to whom, and over what time horizon, including a cap on the debris legacy left to future generations. The NARETU framing is credited to the challenge brief and to Chief Titus Letaapo. |
@@ -202,8 +202,8 @@ A small FastAPI server on the GPU machine. The website sends it requests and rec
      - a "Rules only vs AI" toggle
    - **Modal:** human decision (Approve / Override / Stop).
 3. **Results** (F12).
-4. **How it works:** diagram mapping mycelium to orbit.
-5. **Governance sections:** where the analogy breaks (F13), responsibility (F14), learning governance (F15), NARETU charter (F16).
+4. **How it works:** diagram of local decisions, handshake, shared rules and ledger.
+5. **Governance sections:** responsibility (F14), learning governance (F15), NARETU charter (F16). F13 is covered in the video only.
 6. **Sources and credits.**
 
 **JS modules** (in `web/js/`):
@@ -271,7 +271,7 @@ web/   frontend
 
 | Tier | Scope |
 |---|---|
-| **MUST** | Video; submission answers; a demo link that opens; F1, F2, F4, F5, F6, F7, F10; F13–F16 as written sections |
+| **MUST** | Video; submission answers; a demo link that opens; F1, F2, F4, F5, F6, F7, F10; F14–F16 as written sections; F13 as a video beat |
 | **SHOULD** | F3 (trained RL in the browser); F12 results; F9 explainer (static) |
 | **COULD** | F11 Kessler finale; F15 as a diagram |
 | **WON'T (this submission)** | F8 predictor; F17 Live API |
@@ -439,6 +439,7 @@ All files live in `web/data/`. Only real data files are produced (no mocks); eac
 
 - **`objects.json`** — `[{ "id": 25544, "name": "ISS (ZARYA)", "class": "crewed"|"autonomous"|"manoeuvrable"|"debris", "operator": "string", "omm": { CelesTrak OMM JSON fields } }]`
 - **`episodes.json`** — `[{ "id": "aeolus-2019", "title": "...", "scripted": true, "agents": [{ "id", "name", "class", "operator", "fuel": 0-1, "ledger": number }], "steps": [{ "t_min": -240..0, "pc": number, "miss_m": number, "sigma_m": number, "actions": { "<agentId>": { "action": 0-6, "probs": [7 floats] } }, "messages": [{ "from", "to", "type": "PROPOSE|ACK|DO-NOT-MOVE|EXECUTED|ESCALATE", "text" }], "escalation": null | { "trigger": "string", "level": "L0".."L4" } }], "outcome": { "collision": bool, "dv_ms": { "<agentId>": number }, "ledger_after": { "<operator>": number } } }]`
+- **`episodes.json` optional fields (added in v1.3, backward-compatible)** — item `variant`: `"scripted" | "rules" | "ai"`; step `verdict`: `{ "yielder", "rule", "reason" }`; step `note`: short narrative text; escalation step `branches`: `{ "approve": [steps], "override": [steps], "stop": [steps] }`, the precomputed continuation for each human choice.
 - **`policy.json`** — `{ "arch": [24, 64, 64, 7], "activation": "tanh", "obs_mean": [24], "obs_std": [24], "layers": [{ "W": [[...]], "b": [...] }], "actions": ["hold", "small_open", "large_open", "small_close", "radial", "request_yield", "escalate"] }`
 - **`testvec.json`** — `[{ "obs": [24], "logits": [7] }]` (100 entries, for the parity test)
 - **`explanations.json`** — `{ "<episodeId>:<stepIndex>": "plain-English text" }`
@@ -454,3 +455,4 @@ All files live in `web/data/`. Only real data files are produced (no mocks); eac
 | 1.0 | 26 Sep 2026 | Corrected orbital statistics and the December 2025 incident to match published sources; added a safety shield so rules and escalation triggers sit outside the AI policy; closed the escalation-penalty loophole in the reward; defined silent and non-cooperative counterparts; added verification of declared priority class; clarified when a human override is allowed; deferred F8 and F17; fixed the baseline count; added a build schedule |
 | 1.1 | 26 Sep 2026 | Replaced the build schedule with six delivery phases, each with scope, exit criteria and a decision gate for the AI layer |
 | 1.2 | 26 Sep 2026 | Became the single PRD (v0.5 archived in `docs/archive/`); added §19 Interface contracts (real data only, no mocks); hosting set to Cloudflare Pages with security headers; repository public at submission |
+| 1.3 | 26 Sep 2026 | Optional episode fields (`variant`, `verdict`, `note`, `branches`) for the precomputed replay; F2 renamed Risk Links; mycelium kept as the challenge reference only (UI copy is neutral); F13 moved to the video |

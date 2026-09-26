@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "objects.json",
+  "type": "array",
+  "maxItems": 5000,
+  "items": {
+    "type": "object",
+    "required": ["id", "name", "class", "operator", "omm"],
+    "properties": {
+      "id": {"type": "integer", "minimum": 1},
+      "name": {"type": "string", "maxLength": 64},
+      "class": {"enum": ["crewed", "autonomous", "manoeuvrable", "debris"]},
+      "operator": {"type": "string", "maxLength": 64},
+      "omm": {
+        "type": "object",
+        "required": ["OBJECT_NAME", "NORAD_CAT_ID", "EPOCH", "MEAN_MOTION", "ECCENTRICITY", "INCLINATION",
+                     "RA_OF_ASC_NODE", "ARG_OF_PERICENTER", "MEAN_ANOMALY", "BSTAR"]
+      }
+    },
+    "additionalProperties": false
+  }
+}

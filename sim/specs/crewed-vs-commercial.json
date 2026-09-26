@@ -1,0 +1,14 @@
+{
+  "id": "crewed-vs-commercial",
+  "title": "A crewed station and a commercial satellite: the rules decide, a human approves",
+  "agents": [
+    {"id": "station", "name": "Crewed station", "operator": "Station Partners", "fuel": 0.6},
+    {"id": "kst-2210", "name": "KST-2210", "operator": "Kestrel Constellation", "fuel": 0.72}
+  ],
+  "registry": {
+    "station": {"capability": "crewed", "purpose": "public_good"},
+    "kst-2210": {"capability": "autonomous", "purpose": "commercial"}
+  },
+  "encounter": {"miss0_m": 15, "sigma0_m": 1000, "sigma_min_m": 100},
+  "dv_ms": 0.05
+}

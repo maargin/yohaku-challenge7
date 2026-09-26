@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "policy.json",
+  "type": "object",
+  "required": ["arch", "activation", "obs_mean", "obs_std", "layers", "actions"],
+  "properties": {
+    "arch": {"type": "array", "minItems": 2, "maxItems": 6, "items": {"type": "integer", "minimum": 1, "maximum": 1024}},
+    "activation": {"enum": ["tanh", "relu"]},
+    "obs_mean": {"type": "array", "items": {"type": "number"}},
+    "obs_std": {"type": "array", "items": {"type": "number", "exclusiveMinimum": 0}},
+    "layers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["W", "b"],
+        "properties": {
+          "W": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}},
+          "b": {"type": "array", "items": {"type": "number"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "actions": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"type": "string", "maxLength": 32}}
+  },
+  "additionalProperties": false
+}

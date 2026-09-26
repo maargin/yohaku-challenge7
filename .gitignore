@@ -13,3 +13,8 @@ runs/
 .DS_Store
 Thumbs.db
 .vscode/
+node_modules/
+data/raw/
+*.egg-info/
+.pytest_cache/
+.hypothesis/

@@ -1,0 +1,7 @@
+# Core (U1) — exact versions verified on the training server (Python 3.10)
+numpy==2.2.6
+pandas==2.3.3
+jsonschema==4.26.0
+# Tests
+pytest==9.1.1
+hypothesis==6.168.1

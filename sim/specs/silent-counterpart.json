@@ -1,0 +1,15 @@
+{
+  "id": "silent-counterpart",
+  "title": "A counterpart that never answers is treated as unable to move, and its silence is recorded",
+  "agents": [
+    {"id": "sci-ocean", "name": "SCI-Ocean", "operator": "Ocean Science Agency", "fuel": 0.6},
+    {"id": "opx-17", "name": "OPX-17", "operator": "Silent Operator X", "fuel": 0.7}
+  ],
+  "registry": {
+    "sci-ocean": {"capability": "manoeuvrable", "purpose": "public_good"},
+    "opx-17": {"capability": "manoeuvrable", "purpose": "commercial"}
+  },
+  "silent": ["opx-17"],
+  "encounter": {"miss0_m": 70, "sigma0_m": 1200, "sigma_min_m": 100},
+  "ledger0": {"Silent Operator X": -1.5}
+}

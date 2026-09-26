@@ -1,0 +1,13 @@
+{
+  "id": "cubesat-low-fuel",
+  "title": "A low-fuel university CubeSat is protected: the well-fuelled satellite yields",
+  "agents": [
+    {"id": "amr-cube", "name": "AMR-CubeSat", "operator": "Amara University", "fuel": 0.12},
+    {"id": "kst-1877", "name": "KST-1877", "operator": "Kestrel Constellation", "fuel": 0.8}
+  ],
+  "registry": {
+    "amr-cube": {"capability": "manoeuvrable", "purpose": "public_good", "emerging": true},
+    "kst-1877": {"capability": "autonomous", "purpose": "commercial"}
+  },
+  "encounter": {"miss0_m": 90, "sigma0_m": 1100, "sigma_min_m": 110}
+}

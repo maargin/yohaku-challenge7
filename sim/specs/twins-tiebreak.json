@@ -1,0 +1,14 @@
+{
+  "id": "twins-tiebreak",
+  "title": "Two near-identical science satellites: a deterministic tie-break picks exactly one",
+  "agents": [
+    {"id": "sci-ocean", "name": "SCI-Ocean", "operator": "Ocean Science Agency", "fuel": 0.55},
+    {"id": "sci-polar", "name": "SCI-Polar", "operator": "Polar Science Institute", "fuel": 0.52}
+  ],
+  "registry": {
+    "sci-ocean": {"capability": "manoeuvrable", "purpose": "public_good"},
+    "sci-polar": {"capability": "manoeuvrable", "purpose": "public_good"}
+  },
+  "encounter": {"miss0_m": 110, "sigma0_m": 1300, "sigma_min_m": 120},
+  "ledger0": {"Ocean Science Agency": 1.0, "Polar Science Institute": 0.8}
+}

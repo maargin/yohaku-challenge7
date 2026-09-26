@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "results.json",
+  "type": "object",
+  "required": ["strategies", "curves", "plots"],
+  "properties": {
+    "strategies": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["name", "collisions_pct", "dv_mean_ms", "manoeuvres_per_event", "burden_gini", "escalation_pct"],
+        "properties": {
+          "name": {"type": "string", "maxLength": 64},
+          "collisions_pct": {"type": "number", "minimum": 0, "maximum": 100},
+          "dv_mean_ms": {"type": "number", "minimum": 0},
+          "manoeuvres_per_event": {"type": "number", "minimum": 0},
+          "burden_gini": {"type": "number", "minimum": 0, "maximum": 1},
+          "escalation_pct": {"type": "number", "minimum": 0, "maximum": 100}
+        },
+        "additionalProperties": false
+      }
+    },
+    "curves": {
+      "type": "object",
+      "required": ["timesteps", "collision_rate", "dv_mean", "fairness_gap"],
+      "properties": {
+        "timesteps": {"type": "array", "items": {"type": "number"}},
+        "collision_rate": {"type": "array", "items": {"type": "number"}},
+        "dv_mean": {"type": "array", "items": {"type": "number"}},
+        "fairness_gap": {"type": "array", "items": {"type": "number"}}
+      },
+      "additionalProperties": false
+    },
+    "plots": {"type": "array", "items": {"type": "string", "pattern": "^img/plots/[A-Za-z0-9_.-]+\\.png$"}},
+    "gate": {"enum": ["ship", "rules-only"]}
+  },
+  "additionalProperties": false
+}

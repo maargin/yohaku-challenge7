@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "testvec.json",
+  "type": "array",
+  "maxItems": 1000,
+  "items": {
+    "type": "object",
+    "required": ["obs", "logits"],
+    "properties": {
+      "obs": {"type": "array", "items": {"type": "number"}},
+      "logits": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"type": "number"}}
+    },
+    "additionalProperties": false
+  }
+}

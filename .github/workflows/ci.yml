@@ -1,0 +1,65 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PBT_SEED: "20260927"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11.13"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.22.2"
+
+      - name: Install Python dependencies (pinned)
+        run: python -m pip install -r requirements.txt pip-audit==2.9.0 cyclonedx-bom==7.1.0
+
+      - name: Python tests (example + property-based, seed logged)
+        run: python -m pytest -rA
+
+      - name: Regenerate parity cases from Python
+        run: python -m tools.gen_rules_cases --out web/tests/fixtures/rules_cases.json
+
+      - name: JS tests (example + fast-check + Python/JS parity)
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+
+      - name: Validate committed web data against schemas
+        run: |
+          python - <<'EOF'
+          from pathlib import Path
+          from sim import contracts
+          for kind in contracts.KINDS:
+              p = Path("web/data") / f"{kind}.json"
+              if p.exists():
+                  contracts.read_json(kind, p)
+                  print("valid:", p)
+          EOF
+
+      - name: Dependency vulnerability scan
+        run: |
+          pip-audit -r requirements.txt
+          npm audit --audit-level=high
+
+      - name: Secret scan (simple patterns)
+        run: |
+          ! git grep -nIE '(AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|ghp_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]+)' -- . ':!web/tests/fixtures'
+
+      - name: SBOM (CycloneDX)
+        run: cyclonedx-py requirements requirements.txt -o sbom.cdx.json

@@ -1,0 +1,29 @@
+{
+  "id": "aeolus-2019",
+  "title": "2019: ESA Aeolus and Starlink 44 (scripted from ESA's published timeline, compressed)",
+  "agents": [
+    {"id": "aeolus", "name": "Aeolus", "operator": "ESA", "fuel": 0.5},
+    {"id": "starlink-44", "name": "Starlink 44", "operator": "SpaceX", "fuel": 0.8}
+  ],
+  "registry": {
+    "aeolus": {"capability": "manoeuvrable", "purpose": "public_good"},
+    "starlink-44": {"capability": "autonomous", "purpose": "commercial"}
+  },
+  "encounter": {"miss0_m": 80, "sigma0_m": 1500, "sigma_min_m": 120},
+  "pc_script": [[-240, 2e-5], [-180, 1e-4], [-120, 1e-3], [-60, 1.2e-3]],
+  "notes": {
+    "-240": "Both satellites detect the encounter and send PROPOSE with their registered class and fuel.",
+    "-230": "Both compute the same verdict from shared data; the agreed yielder burns early and small. Plan committed."
+  },
+  "email_world": {
+    "burner": "aeolus",
+    "burn_t": -50,
+    "dv_ms": 0.1,
+    "notes": {
+      "-240": "28 Aug: US military alert, 1 in 50,000. ESA emails SpaceX; SpaceX replies it has no plans to move.",
+      "-180": "29 Aug: risk crosses ESA's 1 in 10,000 threshold.",
+      "-120": "1 Sep: risk about 1 in 1,000. A paging-system bug means the follow-up is never seen.",
+      "-50": "2 Sep: Aeolus burns alone, half an orbit before closest approach. No shared record."
+    }
+  }
+}

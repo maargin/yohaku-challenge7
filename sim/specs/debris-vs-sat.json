@@ -1,0 +1,14 @@
+{
+  "id": "debris-vs-sat",
+  "title": "Debris cannot move: the satellite yields and the debris owner pays",
+  "agents": [
+    {"id": "kst-3301", "name": "KST-3301", "operator": "Kestrel Constellation", "fuel": 0.7},
+    {"id": "deb-49863", "name": "Rocket-stage fragment 49863", "operator": "Legacy Launch Co", "fuel": 0.0}
+  ],
+  "registry": {
+    "kst-3301": {"capability": "manoeuvrable", "purpose": "commercial"},
+    "deb-49863": {"capability": "debris", "purpose": "none"}
+  },
+  "encounter": {"miss0_m": 60, "sigma0_m": 1200, "sigma_min_m": 100},
+  "debris_legacy": {"Legacy Launch Co": 3}
+}

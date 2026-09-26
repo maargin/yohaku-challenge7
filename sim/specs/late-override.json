@@ -1,0 +1,14 @@
+{
+  "id": "late-override",
+  "title": "A human tries to change the plan after both sides committed: a new handshake round is required",
+  "agents": [
+    {"id": "kst-5120", "name": "KST-5120", "operator": "Kestrel Constellation", "fuel": 0.75},
+    {"id": "nwn-208", "name": "NWN-208", "operator": "Northwind Networks", "fuel": 0.65}
+  ],
+  "registry": {
+    "kst-5120": {"capability": "autonomous", "purpose": "commercial"},
+    "nwn-208": {"capability": "manoeuvrable", "purpose": "commercial"}
+  },
+  "encounter": {"miss0_m": 85, "sigma0_m": 1200, "sigma_min_m": 100},
+  "late_override_t": -40
+}

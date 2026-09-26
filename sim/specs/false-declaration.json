@@ -1,0 +1,14 @@
+{
+  "id": "false-declaration",
+  "title": "A satellite falsely declares itself crewed: the registry wins and the lie is recorded as evidence",
+  "agents": [
+    {"id": "kst-4102", "name": "KST-4102", "operator": "Kestrel Constellation", "fuel": 0.7},
+    {"id": "sci-ocean", "name": "SCI-Ocean", "operator": "Ocean Science Agency", "fuel": 0.6}
+  ],
+  "registry": {
+    "kst-4102": {"capability": "autonomous", "purpose": "commercial"},
+    "sci-ocean": {"capability": "manoeuvrable", "purpose": "public_good"}
+  },
+  "declarations": {"kst-4102": {"capability": "crewed", "purpose": "public_good"}},
+  "encounter": {"miss0_m": 95, "sigma0_m": 1200, "sigma_min_m": 110}
+}

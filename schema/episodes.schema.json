@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "episodes.json",
+  "type": "array",
+  "maxItems": 500,
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,64}$"},
+    "message": {
+      "type": "object",
+      "required": ["id", "t_min", "from", "to", "type", "text"],
+      "properties": {
+        "id": {"type": "string", "maxLength": 80},
+        "t_min": {"type": "number", "minimum": -240, "maximum": 0},
+        "from": {"$ref": "#/$defs/id"},
+        "to": {"$ref": "#/$defs/id"},
+        "type": {"enum": ["PROPOSE", "ACK", "DO-NOT-MOVE", "EXECUTED", "ESCALATE"]},
+        "text": {"type": "string", "maxLength": 200}
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["action", "probs"],
+      "properties": {
+        "action": {"type": "integer", "minimum": 0, "maximum": 6},
+        "probs": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"type": "number", "minimum": 0, "maximum": 1}}
+      },
+      "additionalProperties": false
+    },
+    "step": {
+      "type": "object",
+      "required": ["t_min", "pc", "miss_m", "sigma_m", "actions", "messages", "escalation"],
+      "properties": {
+        "t_min": {"type": "number", "minimum": -240, "maximum": 0},
+        "pc": {"type": "number", "minimum": 0, "maximum": 1},
+        "miss_m": {"type": "number", "minimum": 0},
+        "sigma_m": {"type": "number", "exclusiveMinimum": 0},
+        "actions": {"type": "object", "additionalProperties": {"$ref": "#/$defs/action"}},
+        "messages": {"type": "array", "maxItems": 20, "items": {"$ref": "#/$defs/message"}},
+        "escalation": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": ["trigger", "level"],
+              "properties": {
+                "trigger": {"type": "string", "maxLength": 40},
+                "level": {"enum": ["L0", "L1", "L2", "L3", "L4"]},
+                "reason": {"type": "string", "maxLength": 200}
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "verdict": {
+          "type": "object",
+          "properties": {
+            "yielder": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/id"}]},
+            "rule": {"type": "string", "maxLength": 16},
+            "reason": {"type": "string", "maxLength": 200}
+          },
+          "additionalProperties": false
+        },
+        "note": {"type": "string", "maxLength": 240},
+        "branches": {
+          "type": "object",
+          "properties": {
+            "approve": {"type": "array", "items": {"$ref": "#/$defs/step"}},
+            "override": {"type": "array", "items": {"$ref": "#/$defs/step"}},
+            "stop": {"type": "array", "items": {"$ref": "#/$defs/step"}}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "items": {
+    "type": "object",
+    "required": ["id", "title", "scripted", "agents", "steps", "outcome"],
+    "properties": {
+      "id": {"$ref": "#/$defs/id"},
+      "title": {"type": "string", "maxLength": 120},
+      "scripted": {"type": "boolean"},
+      "variant": {"enum": ["scripted", "rules", "ai"]},
+      "agents": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 8,
+        "items": {
+          "type": "object",
+          "required": ["id", "name", "class", "operator", "fuel", "ledger"],
+          "properties": {
+            "id": {"$ref": "#/$defs/id"},
+            "name": {"type": "string", "maxLength": 64},
+            "class": {"enum": ["crewed", "autonomous", "manoeuvrable", "debris"]},
+            "operator": {"type": "string", "maxLength": 64},
+            "fuel": {"type": "number", "minimum": 0, "maximum": 1},
+            "ledger": {"type": "number"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "steps": {"type": "array", "minItems": 1, "maxItems": 48, "items": {"$ref": "#/$defs/step"}},
+      "outcome": {
+        "type": "object",
+        "required": ["collision", "dv_ms", "ledger_after"],
+        "properties": {
+          "collision": {"type": "boolean"},
+          "dv_ms": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+          "ledger_after": {"type": "object", "additionalProperties": {"type": "number"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "additionalProperties": false
+  }
+}
