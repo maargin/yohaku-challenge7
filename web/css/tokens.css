@@ -1,0 +1,38 @@
+@font-face { font-family: 'Fraunces'; font-weight: 400; font-display: swap; src: url('../fonts/fraunces-400.woff2') format('woff2'); }
+@font-face { font-family: 'Fraunces'; font-weight: 600; font-display: swap; src: url('../fonts/fraunces-600.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 400; font-display: swap; src: url('../fonts/plex-sans-400.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 500; font-display: swap; src: url('../fonts/plex-sans-500.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 600; font-display: swap; src: url('../fonts/plex-sans-600.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 400; font-display: swap; src: url('../fonts/plex-mono-400.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 500; font-display: swap; src: url('../fonts/plex-mono-500.woff2') format('woff2'); }
+
+:root {
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --bg: #0B0F14; --surface: #0E141B; --surface-2: #121A23; --surface-3: #141C26;
+  --line: #1F2B38; --line-2: #2A3A4B; --line-3: #3A4A5B;
+  --text: #E8EDF2; --text-2: #B7C2CD; --text-3: #9AA7B4; --text-4: #8795A3;
+  --accent: #F2B35B; --accent-ink: #1A1206; --accent-text: #F2C98A; --accent-soft: #1A1710;
+  --ok: #7FE8B8; --ok-soft: #16201A; --warn: #FF8C7D; --warn-strong: #FF6B5A; --warn-soft: #2A1512; --warn-line: #6B2E28;
+  --info: #9EC5FF;
+  --cls-debris: #8A94A0; --cls-manoeuvrable: #4C8DFF; --cls-autonomous: #3DDC97; --cls-crewed: #FFC24B;
+  --link-low: #F4EBDC; --link-high: #FF6B5A;
+  --globe-ocean: #0F1C2A; --globe-line: #22364A;
+  --radius: 12px; --radius-lg: 16px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #FBFAF7; --surface-3: #F1EEE7;
+  --line: #E2DDD2; --line-2: #D3CCBE; --line-3: #BFB7A6;
+  --text: #16181C; --text-2: #3B414A; --text-3: #4E5560; --text-4: #5F6671;
+  --accent: #B8741A; --accent-ink: #FFFFFF; --accent-text: #8A5410; --accent-soft: #FBF1E2;
+  --ok: #1D7A4E; --ok-soft: #E6F4EC; --warn: #B3261E; --warn-strong: #B3261E; --warn-soft: #FBE9E7; --warn-line: #E3A69F;
+  --info: #1F5FBF;
+  --cls-debris: #6B7480; --cls-manoeuvrable: #2F6FDB; --cls-autonomous: #1C9C68; --cls-crewed: #B8860B;
+  --link-low: #8A6A3A; --link-high: #C62D1F;
+  --globe-ocean: #DCE6EF; --globe-line: #B7C7D6;
+  color-scheme: light;
+}

@@ -9,6 +9,12 @@
     "test": "node --test \"web/tests/**/*.test.mjs\""
   },
   "devDependencies": {
-    "fast-check": "4.3.0"
+    "@fontsource/fraunces": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "chart.js": "4.5.1",
+    "fast-check": "4.3.0",
+    "globe.gl": "2.46.2",
+    "satellite.js": "7.1.0"
   }
 }

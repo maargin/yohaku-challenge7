@@ -40,6 +40,9 @@ jobs:
           npm ci --no-audit --no-fund
           npm test
 
+      - name: Verify self-hosted vendor files against recorded checksums
+        run: node tools/vendor.mjs --check
+
       - name: Validate committed web data against schemas
         run: |
           python - <<'EOF'

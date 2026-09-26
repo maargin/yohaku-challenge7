@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the System · Orbital coordination prototype</title>
+  <meta name="description" content="A prototype for coordinating satellite collision avoidance across operators: shared right-of-way rules, a machine handshake, a fairness ledger and human oversight.">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="vendor/globe.gl.min.js" defer></script>
+  <script src="vendor/chart.umd.min.js" defer></script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+<a class="sr-only" href="#mission">Skip to Mission Control</a>
+<header class="site-header">
+  <a class="brand" href="#top">the System</a>
+  <nav class="site-nav" aria-label="Sections">
+    <a href="#mission">Mission Control</a>
+    <a href="#replay">2019 replay</a>
+    <a href="#results">Results</a>
+    <a href="#how">How it works</a>
+    <a href="#governance">Governance</a>
+    <a href="#sources">Sources</a>
+  </nav>
+  <span class="spacer"></span>
+  <button class="btn btn-pill" id="theme-toggle" data-testid="theme-toggle" aria-pressed="false">Light mode</button>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="hero-title">
+    <svg class="hero-art" viewBox="0 0 720 720" aria-hidden="true">
+      <circle cx="360" cy="360" r="300" fill="var(--globe-ocean)" stroke="var(--globe-line)" stroke-width="1.5"></circle>
+      <ellipse cx="360" cy="360" rx="300" ry="100" fill="none" stroke="var(--globe-line)"></ellipse>
+      <ellipse cx="360" cy="360" rx="300" ry="200" fill="none" stroke="var(--globe-line)"></ellipse>
+      <ellipse cx="360" cy="360" rx="126" ry="300" fill="none" stroke="var(--globe-line)"></ellipse>
+      <path d="M 160 170 C 260 90, 440 100, 560 200" fill="none" stroke="var(--link-low)" stroke-width="1.6"></path>
+      <path d="M 200 540 C 300 610, 440 600, 530 520" fill="none" stroke="var(--link-high)" stroke-width="2.4"></path>
+      <circle cx="160" cy="170" r="7" fill="var(--cls-manoeuvrable)"></circle>
+      <circle cx="560" cy="200" r="7" fill="var(--cls-autonomous)"></circle>
+      <circle cx="200" cy="540" r="8" fill="var(--cls-crewed)"></circle>
+      <circle cx="530" cy="520" r="6" fill="var(--cls-debris)"></circle>
+    </svg>
+    <div class="hero-copy">
+      <div class="kicker">YOHAKU 2026 · Challenge 7</div>
+      <h1 id="hero-title">Orbit has no traffic rules. We built some.</h1>
+      <p>Every satellite carries the same small AI. Each one senses danger locally, announces its plan to its neighbour, follows shared right-of-way rules, and asks a human when the stakes are high. A shared ledger keeps the cost of staying safe fair.</p>
+      <div class="stats">
+        <div class="stat"><b>207,152</b><span>Starlink avoidance manoeuvres reported in six months (Dec 2025–May 2026)</span></div>
+        <div class="stat"><b>2019</b><span>ESA's Aeolus dodged Starlink 44 alone after a follow-up message went unseen</span></div>
+      </div>
+      <div class="cta">
+        <a class="btn btn-primary btn-pill" href="#mission" data-testid="hero-launch-demo">Launch demo</a>
+        <a class="btn btn-pill" href="#replay" data-testid="hero-replay-link">Watch the 2019 replay</a>
+      </div>
+      <p class="small muted">Local decisions. Shared rules. Human oversight.</p>
+    </div>
+  </section>
+
+  <section id="mission" aria-labelledby="mission-title">
+    <h2 id="mission-title" class="sr-only">Mission Control</h2>
+    <div class="mc">
+      <div class="mc-bar">
+        <button class="btn" id="play-toggle" data-testid="playback-toggle" aria-label="Play">Play</button>
+        <div class="seg" role="group" aria-label="Playback speed">
+          <button class="btn" data-speed="0.5" data-testid="speed-slow" aria-pressed="false">Slow</button>
+          <button class="btn" data-speed="1" data-testid="speed-normal" aria-pressed="true">Normal</button>
+          <button class="btn" data-speed="3" data-testid="speed-fast" aria-pressed="false">Fast</button>
+        </div>
+        <span class="clock" id="clock" aria-live="off">T−240 min</span>
+        <label>Scenario <select id="scenario" data-testid="scenario-picker"></select></label>
+        <span class="spacer"></span>
+        <div class="seg" role="group" aria-label="Decision mode">
+          <button class="btn btn-pill" data-variant="rules" data-testid="mode-rules" aria-pressed="false">Rules only</button>
+          <button class="btn btn-pill" data-variant="ai" data-testid="mode-ai" aria-pressed="true">AI + rules</button>
+        </div>
+        <a class="btn" href="#replay" data-testid="replay-2019-button">Replay 2019</a>
+        <button class="btn btn-danger" id="kessler-btn" data-testid="kessler-button">What if we fail?</button>
+      </div>
+      <div class="mc-body">
+        <aside class="mc-left" aria-label="Close approaches">
+          <div class="panel-title">Close approaches</div>
+          <div id="events" class="events" role="list"></div>
+          <span class="spacer"></span>
+          <div class="card">
+            <div class="panel-title">Autonomy level</div>
+            <div class="ladder" id="ladder" aria-label="Autonomy level">
+              <span data-level="L0">L0</span><span data-level="L1">L1</span><span data-level="L2">L2</span><span data-level="L3">L3</span><span data-level="L4">L4</span>
+            </div>
+            <div class="small muted" id="ladder-text">L4 — the AI acts within the rules.</div>
+          </div>
+        </aside>
+        <div class="globe-wrap" aria-label="Globe of tracked objects">
+          <div id="globe"></div>
+          <div class="globe-fallback" id="globe-fallback">3D view unavailable in this browser. The event list and panels still show every decision.</div>
+          <div class="note-banner" id="note-banner" role="status"></div>
+          <div class="legend" aria-label="Legend">
+            <span><i style="background: var(--cls-debris)"></i>Debris</span>
+            <span><i style="background: var(--cls-manoeuvrable)"></i>Manoeuvrable</span>
+            <span><i style="background: var(--cls-autonomous)"></i>Autonomous</span>
+            <span><i style="background: var(--cls-crewed)"></i>Crewed</span>
+          </div>
+          <div class="credit">Data: CelesTrak · collision probabilities are illustrative</div>
+        </div>
+        <aside class="mc-right" aria-label="Event details">
+          <div class="tabs" role="tablist" aria-label="Event details">
+            <button role="tab" id="tab-brain" aria-controls="panel-brain" aria-selected="false" data-testid="tab-brain">AI Brain</button>
+            <button role="tab" id="tab-handshake" aria-controls="panel-handshake" aria-selected="true" data-testid="tab-handshake">Handshake</button>
+            <button role="tab" id="tab-explain" aria-controls="panel-explain" aria-selected="false" data-testid="tab-explain">Explanation</button>
+            <button role="tab" id="tab-ledger" aria-controls="panel-ledger" aria-selected="false" data-testid="tab-ledger">Ledger</button>
+          </div>
+          <div class="tabpanel" id="panel-brain" role="tabpanel" aria-labelledby="tab-brain" hidden></div>
+          <div class="tabpanel" id="panel-handshake" role="tabpanel" aria-labelledby="tab-handshake">
+            <div class="card" id="verdict-card">
+              <div class="panel-title">Who-Yields verdict</div>
+              <div class="verdict-title" id="verdict-title">Waiting for detection</div>
+              <div class="small" id="verdict-reason"></div>
+            </div>
+            <ol class="log" id="handshake-log" aria-label="Handshake messages"></ol>
+          </div>
+          <div class="tabpanel" id="panel-explain" role="tabpanel" aria-labelledby="tab-explain" hidden></div>
+          <div class="tabpanel" id="panel-ledger" role="tabpanel" aria-labelledby="tab-ledger" hidden></div>
+        </aside>
+      </div>
+    </div>
+    <div class="sr-only" id="announcer" aria-live="polite"></div>
+  </section>
+
+  <dialog class="decision" id="decision" aria-labelledby="decision-title" data-testid="escalation-dialog">
+    <div style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap">
+        <span class="mono" id="decision-kicker" style="color: var(--warn); font-size: 13px; letter-spacing: 1.2px">ESCALATION</span>
+        <span class="mono muted small" id="decision-when"></span>
+      </div>
+      <h2 id="decision-title">A human decision is needed.</h2>
+      <div class="grid2">
+        <div class="card"><span class="small muted">Proposed plan</span><b id="decision-plan"></b></div>
+        <div class="card"><span class="small muted">Risk (illustrative)</span><b class="mono" id="decision-risk"></b></div>
+      </div>
+      <p class="small" id="decision-text" style="margin: 0; color: var(--text-2)"></p>
+      <div class="actions">
+        <button class="btn btn-primary" data-choice="approve" data-testid="escalation-approve-button">Approve plan</button>
+        <button class="btn" data-choice="override" data-testid="escalation-override-button">Override</button>
+        <button class="btn btn-danger" data-choice="stop" data-testid="escalation-stop-button">Stop — hold both</button>
+      </div>
+      <p class="small muted" style="margin: 0">Your decision is logged with the time. Hard triggers sit outside the AI; it cannot switch them off.</p>
+    </div>
+  </dialog>
+
+  <section class="section" id="replay" aria-labelledby="replay-title">
+    <div class="section-head">
+      <div class="kicker">September 2019 · ESA Aeolus × Starlink 44</div>
+      <h2 id="replay-title">Same encounter, two worlds</h2>
+      <p>Scripted from ESA's published timeline (compressed). Left: what happened. Right: the same encounter with a machine handshake and shared rules.</p>
+    </div>
+    <div class="replay-grid">
+      <div class="world email" aria-labelledby="email-h"><h3 id="email-h">Email world (what happened)</h3><ol id="replay-email"></ol></div>
+      <div class="world system" aria-labelledby="system-h"><h3 id="system-h">The System's world</h3><ol id="replay-system"></ol></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; margin-top: 20px">
+      <button class="btn btn-primary" id="replay-play" data-testid="replay-play">Play replay</button>
+      <div class="progress" style="flex: 1"><i id="replay-progress"></i></div>
+    </div>
+  </section>
+
+  <section class="section" id="results" aria-labelledby="results-title">
+    <div class="section-head">
+      <div class="kicker">Results · 1,000 held-out scenarios</div>
+      <h2 id="results-title">Does the shared AI actually help?</h2>
+      <p id="results-summary">Loading results…</p>
+    </div>
+    <div class="table-wrap"><table class="results" id="results-table" data-testid="results-table">
+      <thead><tr><th scope="col">Strategy</th><th scope="col">Collisions %</th><th scope="col">Mean Δv (m/s)</th><th scope="col">Manoeuvres / event</th><th scope="col">Burden Gini</th><th scope="col">Escalation %</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="charts" id="charts"></div>
+    <div class="plots" id="plots"></div>
+    <p class="small muted" style="margin-top: 16px">Linearised dynamics and illustrative collision probabilities; not an operational tool.</p>
+  </section>
+
+  <section class="section" id="how" aria-labelledby="how-title">
+    <div class="section-head">
+      <div class="kicker">How it works</div>
+      <h2 id="how-title">Local decisions, shared rules, human oversight</h2>
+    </div>
+    <div class="flow">
+      <div class="card"><h3>1 · Sense locally</h3><p class="small" style="margin: 0">Each satellite's onboard AI watches its most dangerous neighbour: time to closest approach, miss distance, uncertainty, fuel.</p></div>
+      <div class="card"><h3>2 · Announce</h3><p class="small" style="margin: 0">Both sides send PROPOSE with their registered class and fuel. Silence counts: a satellite that never answers is treated as unable to move.</p></div>
+      <div class="card"><h3>3 · Same rules, same answer</h3><p class="small" style="margin: 0">Both compute the same Who-Yields verdict from shared data: debris never moves, crewed holds, low fuel is protected, then fair tie-breaks.</p></div>
+      <div class="card"><h3>4 · Shield, human, ledger</h3><p class="small" style="margin: 0">A safety shield checks every AI action. High stakes go to a human. The ledger credits whoever yields and charges free-riders.</p></div>
+    </div>
+  </section>
+
+  <section class="section" id="governance" aria-labelledby="gov-title">
+    <div class="section-head">
+      <div class="kicker">Governance</div>
+      <h2 id="gov-title">Who is in charge, who is responsible, and what does everyone owe?</h2>
+    </div>
+    <div class="gov-grid">
+      <div>
+        <div class="kicker">Responsibility</div>
+        <h3 style="font-size: 26px; margin: 8px 0 14px">When an AI-shaped decision goes wrong, who answers?</h3>
+        <div class="resp">
+          <div><b>Bad tracking data</b> — the data provider first, the operator second.</div>
+          <div><b>Flawed AI policy</b> — the AI developer, within its declared operating domain.</div>
+          <div><b>Ignored or silent handshake</b> — that operator, presumed responsible.</div>
+          <div><b>False class declaration</b> — the declaring operator; the licensing state supervises.</div>
+          <div><b>Evidence of fault</b> — whether the rules were followed, and what the ledger and decision log show.</div>
+        </div>
+      </div>
+      <div>
+        <div class="kicker">Learning governance</div>
+        <h3 style="font-size: 26px; margin: 8px 0 14px">The network learns. People decide what it learns.</h3>
+        <div class="chain">
+          <div class="card">Every case logged</div><span aria-hidden="true">→</span>
+          <div class="card">Update proposed</div><span aria-hidden="true">→</span>
+          <div class="card hl">Independent Orbital Incident Board approves</div><span aria-hidden="true">→</span>
+          <div class="card">New version recorded</div>
+        </div>
+        <p class="small muted" style="margin-top: 14px">No rule or model changes by itself. Like aviation incident boards, the board reviews cases and approves changes, and every version stays on record.</p>
+      </div>
+    </div>
+    <div class="charter" aria-labelledby="charter-title">
+      <div class="kicker">NARETU obligations charter</div>
+      <h3 id="charter-title" style="font-size: 32px; margin-top: 8px">What each actor owes, to whom, and for how long</h3>
+      <div class="charter-grid">
+        <div class="card"><b>Operators owe</b><span class="small">Shared data, a timely handshake, their fair share of dodges, and disposal at end of life.</span></div>
+        <div class="card"><b>AI developers owe</b><span class="small">Explainable decisions, a bounded operating domain, and triggers they cannot switch off.</span></div>
+        <div class="card"><b>Data providers owe</b><span class="small">Neutral, timely warnings with honest uncertainty.</span></div>
+        <div class="card"><b>States owe</b><span class="small">Supervision of the operators they license, and verified registration.</span></div>
+        <div class="card wide"><b style="color: var(--accent-text)">Everyone owes those not yet launched</b><span class="small">A usable orbit: no net addition to long-lived debris, and protection for the small, the stuck and the crewed first.</span></div>
+      </div>
+      <p class="small muted" style="margin: 16px 0 0">NARETU framing from the challenge brief, credited to Chief Titus Letaapo and Samburu obligations-based governance.</p>
+    </div>
+  </section>
+
+  <section class="section" id="sources" aria-labelledby="sources-title">
+    <div class="section-head"><div class="kicker">Sources &amp; credits</div><h2 id="sources-title">Data, research and software</h2></div>
+    <ul class="sources">
+      <li>Orbital elements and daily conjunction screening (SOCRATES): CelesTrak, T.S. Kelso.</li>
+      <li>Conjunction scenarios: ESA Kelvins Collision Avoidance Challenge dataset, CC-BY-4.0, Zenodo 10.5281/zenodo.4463683 (Uriot et al. 2022).</li>
+      <li>2019 timeline: ESA, "ESA spacecraft dodges large constellation" (2019); Starlink manoeuvre counts: SpaceX semiannual reports to the FCC.</li>
+      <li>Right-of-way ideas: maritime COLREGs; aviation TCAS coordination and the 2002 Überlingen accident; Space Safety Coalition best practices.</li>
+      <li>Software: globe.gl, three.js, satellite.js, Chart.js (MIT); Fraunces and IBM Plex fonts (SIL OFL).</li>
+    </ul>
+  </section>
+</main>
+<footer>Prototype for YOHAKU 2026 Challenge 7. Collision probabilities are illustrative; dynamics are linearised. Not an operational tool.</footer>
+<div class="toast" id="toast" role="alert"></div>
+</body>
+</html>
