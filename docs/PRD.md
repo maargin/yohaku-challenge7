@@ -1,6 +1,6 @@
 # [Project Name TBD] — Product Requirements Document
 
-*Version 0.4 · 26 Sep 2026 · Status: approved for build · Team: 2 members · Working placeholder: **"the System"***
+*Version 0.5 · 26 Sep 2026 · Status: approved for build · Team: 2 members · Working placeholder: **"the System"***
 
 This PRD is a living document: it is updated as the build progresses and becomes the record of the full implementation.
 
@@ -314,32 +314,34 @@ Full drafts of the text answers are in `docs/submission-answers.md`.
 
 ## 18. Team and ownership
 
-| | **Member A — Sanskar** (lead, backend & story) | **Member B** (frontend, full-time) |
+**Model: we build everything; Member B builds a parallel frontend.** Member A builds the complete project end-to-end (backend + a full frontend). Member B independently builds a second, full frontend against the same data contracts. At feature freeze (Sun 08:30 IST) the team picks the stronger frontend — or merges the best parts — and the other stays as backup.
+
+| | **Member A — Sanskar** (lead: complete project) | **Member B — Jason** (parallel frontend, full-time) |
 |---|---|---|
-| **Owns folder** | `sim/`, `docs/` | `web/` |
-| **Features** | F3 model side (training, export), F4 rules engine (Python + `rules.js`), F8, F9 (LLM), F12 data, F17 server; F13–F16 content; submission answers; video + voice-over | F1, F2, F5, F6, F7, F10, F11; F3 panel + `policy.js`/`env.js`; F9/F12/F17 UI; governance sections layout (F13–F16); hosting + deploy |
-| **Machine** | GPU server 1 (training, LLM, Live API) | Own Linux machine (same spec) for web dev; optional extra training seeds |
-| **Delivers to the other** | Real data files replacing mocks (§19), `rules.js`, API URL for Live mode | Deployed demo URL, screen-recording-ready UI |
+| **Owns folder** | `sim/`, `docs/`, `web/` (frontend A) | `web-b/` (frontend B) |
+| **Builds** | Everything: backend (RL training + export, rules engine, F8, F9 LLM, F12 data, F17 server) **and** full frontend F1–F17 in `web/`; F13–F16 content; submission answers; video + voice-over | Complete alternative frontend F1–F17 UI in `web-b/`, reading the same `web/data/` files and Live API; own hosting preview |
+| **Machine** | GPU server 1 (training, LLM, Live API) | Own Linux machine (same spec) |
+| **Shares** | Data files (§19, mocks first then real), `rules.js`, `policy.js`, Live API URL | Preview URL, reusable components/styles |
 
 **Working rules**
-- Branches: `backend/*` (A) and `frontend/*` (B); small PRs into `main`; A reviews B's PRs and vice versa (10-min max).
-- Each member only edits their own folder; shared files (`README.md`, `docs/PRD.md`) edited by A.
-- B starts immediately against **mock data files** (§19) committed by A in the first hour; A swaps in real files later with the same format.
-- Sync points (15 min call): 16:00, 20:00, 23:30 IST Sat; 08:30, 12:00 IST Sun.
+- Branches: `a/*` (A) and `b/*` (B); PRs into `main`. Each member edits only their own folders; `docs/` and `web/data/` are owned by A.
+- Both frontends start immediately against **mock data files** (§19) committed by A in the first hour; A swaps in real files later with the same format — neither frontend needs code changes.
+- Either side may copy good components from the other (credit in commit message).
+- Sync points (15 min call): 16:00, 20:00, 23:30 IST Sat; 08:30 (**frontend decision**), 12:00 IST Sun.
 
 **Team timeline (IST)**
-| When | Member A | Member B |
+| When | Member A (backend + frontend A) | Member B (frontend B) |
 |---|---|---|
-| Sat 15:00–16:00 | Mock data files + contracts (§19) + `rules.js` | Page skeleton, layout, theme, globe (F1) with `objects.json` |
-| 16:00–20:00 | RL env, tests, baselines, training (GPU) | Threads (F2), event list, handshake feed (F5), ledger (F6) |
-| 20:00 | **Hosting decided + first deploy** (B) | |
-| 20:00–23:30 | Evaluation, plots, export `policy.json`, static explanations | Escalation modal (F7), AI Brain panel + `policy.js` parity test (F3), Aeolus replay (F10) |
-| 23:30–01:30 | Governance content (F13–F16), submission answer drafts | Results panel (F12), governance sections, sources/credits |
-| 01:30–06:30 | Sleep (extra training seeds run overnight) | Sleep |
-| Sun 06:30–08:30 | Live API + predictor (COULD) | Live mode UI (`api.js`), Kessler (F11), polish |
-| 08:30 | **Feature freeze** | |
-| 08:30–10:30 | Final data swap, one-pager, answers final | Bug fixes, performance, final deploy |
-| 10:30–13:30 | Video script, record + voice-over, edit | Screen recordings for the video; test on another device |
+| Sat 15:00–16:00 | Mock data files + contracts (§19) + `rules.js`/`policy.js` | Skeleton, layout, theme, globe (F1) |
+| 16:00–20:00 | Backend: RL env, tests, baselines, start GPU training; frontend A: globe + threads | Threads (F2), event list, handshake (F5), ledger (F6) |
+| 20:00 | **Hosting decided + first deploy** of both previews | |
+| 20:00–23:30 | Eval, plots, export policy, explanations; frontend A: brain panel, rules, escalation, replay | Escalation (F7), AI Brain (F3), Aeolus replay (F10) |
+| 23:30–01:30 | Governance content (F13–F16), answer drafts; frontend A: results + governance sections | Results (F12), governance sections, credits |
+| 01:30–06:30 | Sleep (extra seeds overnight) | Sleep |
+| Sun 06:30–08:30 | Live API + predictor; frontend A: live mode, Kessler | Live mode UI, Kessler (F11), polish |
+| **08:30** | **Feature freeze + pick frontend (A, B or merge)** | |
+| 08:30–10:30 | Real data swap, one-pager, final answers | Bug fixes on chosen frontend, final deploy |
+| 10:30–13:30 | Video script, record + voice-over, edit | Screen recordings; test on another device |
 | 13:30–16:30 | Fill form, **submit by 16:30 IST** | Buffer / backup |
 
 ## 19. Interface contracts (data files and API)
