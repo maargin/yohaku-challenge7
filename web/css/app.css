@@ -289,3 +289,13 @@ footer { padding: 28px 64px; color: var(--text-4); font-size: 13px; }
 .tour-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .tour-target { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 6px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 25%, transparent); transition: box-shadow 0.3s; }
 @media (max-width: 700px) { .tour-card { bottom: 8px; padding: 12px 14px; } .tour-title { font-size: 17px; } }
+
+/* approach view legend */
+.approach-legend { right: auto; max-width: 60%; }
+.approach-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.approach-legend .lg-dot { background: var(--cls-crewed); }
+.approach-legend .lg-move { background: var(--cls-autonomous); }
+.approach-legend .lg-disc { background: color-mix(in srgb, var(--link-high) 25%, transparent); border: 1px solid var(--link-high); }
+.approach-legend .lg-hard { background: transparent; border: 1.5px solid var(--warn); }
+.approach-legend .lg-ring { background: transparent; border: 1px dashed var(--line-3); }
+@media (max-width: 700px) { .approach-legend { max-width: calc(100% - 32px); font-size: 11px; } .approach-wrap .credit { display: none; } }

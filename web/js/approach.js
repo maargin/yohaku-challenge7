@@ -105,15 +105,19 @@ function draw() {
 
   // range rings
   let rings = 0;
+  let lastLabelY = -1e9;
   ctx.fillStyle = css('--text-4');
+  ctx.textAlign = 'center';
   for (const r of RINGS) {
     const rp = r * scale;
     if (rp < 18) continue;
     if (rp > Math.hypot(W, H) / 2) break;
     circle(cx, cy, rp, css('--line-2'), null, [3, 5]);
-    ctx.fillText(fmtM(r), cx + rp * 0.7071 + 4, cy - rp * 0.7071 - 4);
+    const ly = cy - rp - 4;
+    if (Math.abs(ly - lastLabelY) > 14 && ly > 14) { ctx.fillText(fmtM(r), cx, ly); lastLabelY = ly; }
     if (++rings >= 3) break;
   }
+  ctx.textAlign = 'left';
 
   // the mover's track and its approach along it
   const P = { x: px(shown.along), y: py(shown.perp) };
@@ -128,20 +132,20 @@ function draw() {
   ctx.stroke();
   ctx.setLineDash([]);
   const progress = Math.max(0, Math.min(1, 1 - (-frame.t / 240)));
-  const fromX = g.mover === 1 ? W + 16 : -16;
+  const fromX = g.mover === 1 ? W - 70 : 70;
   const mx = fromX + (P.x - fromX) * (0.12 + 0.88 * progress);
 
   // uncertainty disc at the predicted pass point
   const st = linkStyle(frame.pc, { over: i >= n - 1 });
   const riskColor = mix(css('--link-low'), css('--link-high'), st.risk);
-  ctx.globalAlpha = 0.16;
+  ctx.globalAlpha = 0.12;
   circle(P.x, P.y, shown.sigma * scale, null, riskColor);
   ctx.globalAlpha = 0.8;
   circle(P.x, P.y, shown.sigma * scale, riskColor, null);
   ctx.globalAlpha = 1;
   ctx.fillStyle = css('--text-3');
   ctx.textAlign = 'center';
-  ctx.fillText(`σ ${fmtM(frame.sigma)}`, P.x, P.y - shown.sigma * scale - 6);
+  ctx.fillText(`uncertainty σ ${fmtM(frame.sigma)}`, P.x, P.y + shown.sigma * scale + 14);
   ctx.textAlign = 'left';
 
   // hard-body circle around the object that holds course
@@ -158,7 +162,8 @@ function draw() {
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = css('--text-2');
-  ctx.fillText(`miss ${fmtM(frame.miss)}`, (cx + P.x) / 2 + 6, (cy + P.y) / 2 - 6);
+  const near = Math.hypot(P.x - cx, P.y - cy) < 70;
+  ctx.fillText(`miss ${fmtM(frame.miss)}`, near ? cx + 10 : (cx + P.x) / 2 + 6, near ? cy + Math.max(3, RADIUS_M * scale) + 32 : (cy + P.y) / 2 - 6);
 
   // the burn: the pass point moves out along the track
   if (burned) {
@@ -176,7 +181,9 @@ function draw() {
   ctx.fillStyle = css('--text');
   ctx.fillText(`${standOn.name} · holds`, cx + 10, cy - 12);
   circle(mx, P.y, 6, css('--bg'), css(`--cls-${mover.cls}`));
-  ctx.fillText(`${mover.name}${burned || mover.burned ? ' · moved' : frame.yielder === null ? '' : ' · must move'}`, mx + 10, P.y + 22);
+  ctx.textAlign = g.mover === 1 ? 'right' : 'left';
+  ctx.fillText(`${mover.name}${burned || mover.burned ? ' · moved' : frame.yielder === null ? '' : ' · must move'}`, g.mover === 1 ? mx - 10 : mx + 10, P.y + 22);
+  ctx.textAlign = 'left';
 
   if (hud) hud.textContent = `${tMinus(frame.t)} · σ ${fmtM(frame.sigma)} · Pc ${pcText(frame.pc)} · miss ${fmtM(frame.miss)}${burned ? ` → ${fmtM(frame.missAfter)}` : ''}`;
   if (announcer && lastAnnounced !== frame.index) {

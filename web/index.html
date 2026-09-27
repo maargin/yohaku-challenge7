@@ -70,7 +70,14 @@
     <div class="approach-wrap" aria-label="Approach view">
       <canvas id="approach" role="img" aria-labelledby="approach-caption"></canvas>
       <div class="hud" id="approach-hud">Waiting for an encounter</div>
-      <div class="credit" id="approach-caption">Predicted geometry at closest approach · relative to the object that holds course · illustrative</div>
+      <div class="legend approach-legend" aria-label="Approach view legend">
+        <span><i class="lg-dot"></i>object that holds course (centre)</span>
+        <span><i class="lg-dot lg-move"></i>object that moves, sliding in along the dashed track</span>
+        <span><i class="lg-disc"></i>uncertainty σ</span>
+        <span><i class="lg-hard"></i>20 m hard body</span>
+        <span><i class="lg-ring"></i>distance rings</span>
+      </div>
+      <div class="credit" id="approach-caption">Predicted geometry at closest approach · illustrative</div>
     </div>
     <div class="sr-only" id="stage-announcer" aria-live="polite"></div>
     <div class="sr-only" id="announcer" aria-live="polite"></div>
