@@ -13,7 +13,7 @@ export function init() {
   const objects = store.get('data').objects ?? [];
   const byName = new Map(objects.map((o) => [o.name, o]));
   const list = $('#pair-objects');
-  objects.forEach((o) => list.append(h('option', { value: o.name, text: `${o.class} · ${o.operator}` })));
+  byName.forEach((o) => list.append(h('option', { value: o.name, text: `${o.class} · ${o.operator}` })));
   card.hidden = false;
   const status = $('#pair-status');
   const btn = $('#pair-run');

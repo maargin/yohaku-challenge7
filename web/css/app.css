@@ -206,3 +206,6 @@ footer { padding: 28px 64px; color: var(--text-4); font-size: 13px; }
 
 .pair-form { display: flex; flex-direction: column; gap: 8px; }
 .pair-form input { min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface-3); color: var(--text); font: inherit; width: 100%; }
+
+/* the hidden attribute always wins over display rules on cards, rows and panels */
+[hidden] { display: none !important; }
