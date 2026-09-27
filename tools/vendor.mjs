@@ -36,7 +36,10 @@ function walk(dir, out = []) {
 const satDist = join(nm, 'satellite.js', 'dist');
 for (const p of walk(satDist)) files.push([relative(nm, p), join('vendor', 'satellite.js', relative(satDist, p))]);
 
-const sha = (p) => createHash('sha256').update(readFileSync(p)).digest('hex');
+// text files are hashed with LF line endings so the check is the same on every platform
+const sha = (p) => { let b = readFileSync(p); if (/.(txt|js|css|json)$/.test(p)) b = Buffer.from(b.toString('utf8').replace(/
+/g, '
+')); return createHash('sha256').update(b).digest('hex'); };
 const check = process.argv.includes('--check');
 const lines = [];
 for (const [src, dst] of files) {
