@@ -185,6 +185,10 @@ export function init() {
   const form = $('#live-form', root);
   const out = $('#live-output', root);
   if (!policy) { out.append(h('p', { class: 'muted', text: 'The onboard AI could not be loaded, so live mode is unavailable.' })); return; }
+  if ((store.get('live') ?? {}).run) {
+    $('#live-kicker', root).textContent = 'Live · decided on the simulator';
+    $('#live-intro', root).textContent = 'Your encounter is sent to the simulator, where the trained policy decides every step behind the same safety layer that produced the results below. The plain-language explanation is written by a local language model when you ask for it.';
+  }
   const preset = select('live-preset', Object.entries(PRESETS).map(([k, p]) => [k, p.title]), 'aeolus-2019');
   const spec0 = PRESETS['aeolus-2019'];
   form.append(
