@@ -11,6 +11,8 @@ import * as stage from './stage.js';
 import * as setup from './setup.js';
 import * as pair from './pair.js';
 import * as timeline from './timeline.js';
+import * as approach from './approach.js';
+import * as flow from './flow.js';
 import * as globe from './globe.js';
 
 async function start() {
@@ -21,7 +23,7 @@ async function start() {
     if (s) s.textContent = 'Scenario data unavailable.';
     return;
   }
-  [['playback', playback], ['escalation', escalation], ['stage', stage], ['setup', setup], ['pair', pair], ['timeline', timeline]]
+  [['playback', playback], ['escalation', escalation], ['stage', stage], ['setup', setup], ['pair', pair], ['timeline', timeline], ['approach', approach], ['flow', flow]]
     .forEach(([name, mod]) => guard(name, mod.init)());
   startGlobe(globe);
   kesslerButton(globe);
