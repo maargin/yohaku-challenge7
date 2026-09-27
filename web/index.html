@@ -81,6 +81,17 @@
         <aside class="mc-left" aria-label="Close approaches">
           <div class="panel-title">Close approaches</div>
           <div id="events" class="events" role="list"></div>
+          <div class="card" id="pair-card" hidden>
+            <div class="panel-title">Pick two real objects</div>
+            <form id="pair-form" class="pair-form" data-testid="pair-form">
+              <label class="live-field"><span class="small muted">Object A</span><input id="pair-a" list="pair-objects" placeholder="Type a name, e.g. ISS" autocomplete="off" maxlength="40"></label>
+              <label class="live-field"><span class="small muted">Object B</span><input id="pair-b" list="pair-objects" placeholder="e.g. STARLINK-30110" autocomplete="off" maxlength="40"></label>
+              <datalist id="pair-objects"></datalist>
+              <label class="live-field"><span class="small muted">Predicted miss distance (m)</span><input id="pair-miss" type="number" value="80" min="0" max="3000" step="5" inputmode="decimal"></label>
+              <button type="submit" class="btn btn-primary" id="pair-run" data-testid="pair-run">Run on the simulator</button>
+              <div class="small muted" id="pair-status" aria-live="polite"></div>
+            </form>
+          </div>
           <span class="spacer"></span>
           <div class="card">
             <div class="panel-title">Autonomy level</div>

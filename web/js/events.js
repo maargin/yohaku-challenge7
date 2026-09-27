@@ -15,12 +15,26 @@ export function select(id) {
   store.set('episodeId', id);
 }
 
+let renderList = () => {};
+
+function orderedIds(eps) {
+  const all = episodeIds(eps);
+  return all.filter((id) => id !== 'aeolus-2019').concat(all.includes('aeolus-2019') ? ['aeolus-2019'] : []);
+}
+
+// A scenario computed just now (live server): replaces any earlier one with the same id.
+export function addEpisode(ep) {
+  const data = store.get('data');
+  data.episodes = (data.episodes ?? []).filter((e) => e.id !== ep.id).concat([ep]);
+  renderList();
+}
+
 export function init() {
-  const eps = store.get('data').episodes ?? [];
-  const ids = episodeIds(eps).filter((id) => id !== 'aeolus-2019').concat(episodeIds(eps).includes('aeolus-2019') ? ['aeolus-2019'] : []);
   const list = $('#events');
   const picker = $('#scenario');
-  const renderList = () => {
+  renderList = () => {
+    const eps = store.get('data').episodes ?? [];
+    const ids = orderedIds(eps);
     clear(list);
     clear(picker);
     ids.forEach((id, n) => {
@@ -45,6 +59,7 @@ export function init() {
     store.set('variant', b.dataset.variant);
     select(id);
   }));
+  const ids = orderedIds(store.get('data').episodes ?? []);
   store.set('episodeId', ids.includes('crewed-vs-commercial') ? 'crewed-vs-commercial' : ids[0]);
   renderList();
 }

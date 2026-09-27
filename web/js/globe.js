@@ -40,18 +40,44 @@ function propagateAll(date) {
   return CLASSES.map((c) => ({ cls: c, pts: sets[c] }));
 }
 
+// Where a scenario is shown: a live pair sits at its first object's real position, others at a fixed site.
+function siteOf(ep) {
+  return ep && ep.site && Number.isFinite(ep.site.lat) && Number.isFinite(ep.site.lng) ? ep.site : encounterSite(ep ? ep.id : 'kessler');
+}
+
+// Has this agent executed a burn by step i?
+function burnedBy(steps, i, agentId) {
+  return steps.slice(0, i + 1).some((s) => { const a = s.actions && s.actions[agentId]; return a && [1, 2, 3, 4].includes(a.action); });
+}
+
+// Current position of a catalogue object, or null when it cannot be propagated.
+export function positionOf(id) {
+  const r = records.find((x) => x.id === id);
+  if (!r) return null;
+  try {
+    const date = new Date(simTime);
+    const pv = sat.propagate(r.satrec, date);
+    if (!pv || !pv.position || typeof pv.position === 'boolean') return null;
+    const g = sat.eciToGeodetic(pv.position, sat.gstime(date));
+    return { lat: sat.degreesLat(g.latitude), lng: sat.degreesLong(g.longitude) };
+  } catch { return null; }
+}
+
 function agentLayer() {
   const ep = currentEpisode();
   const steps = currentSteps();
   const i = store.get('stepIndex');
   if (!ep || !steps.length) return { points: [], arcs: [], labels: [] };
   const s = steps[Math.min(i, steps.length - 1)];
-  const site = encounterSite(ep.id);
+  const site = siteOf(ep);
   const closing = Math.max(0.15, -s.t_min / 240);
   const sep = 1.5 + 9 * closing;
   const [a, b] = ep.agents;
-  const pa = { lat: site.lat + sep * 0.35, lng: site.lng - sep, alt: 0.09, cls: a.class, name: a.name };
-  const pb = { lat: site.lat - sep * 0.35, lng: site.lng + sep, alt: 0.09, cls: b.class, name: b.name };
+  const ba = burnedBy(steps, i, a.id);
+  const bb = burnedBy(steps, i, b.id);
+  // a satellite that has burned is pushed off the closing line: the reaction is visible on the globe
+  const pa = { lat: site.lat + sep * 0.35 + (ba ? 2.5 : 0), lng: site.lng - sep, alt: ba ? 0.13 : 0.09, cls: a.class, name: ba ? `${a.name} · moved` : a.name };
+  const pb = { lat: site.lat - sep * 0.35 - (bb ? 2.5 : 0), lng: site.lng + sep, alt: bb ? 0.13 : 0.09, cls: b.class, name: bb ? `${b.name} · moved` : b.name };
   const over = i >= steps.length - 1;
   const st = linkStyle(s.pc, { over });
   const color = mix(css('--link-low'), css('--link-high'), st.risk);
@@ -83,7 +109,7 @@ function tick() {
 export function kessler() {
   if (fragments.length) { fragments = []; tick(); return false; }
   const ep = currentEpisode();
-  const site = encounterSite(ep ? ep.id : 'kessler');
+  const site = siteOf(ep);
   const n = 1500;
   fragments = Array.from({ length: n }, () => ({
     lat: site.lat, lng: site.lng, alt: 0.08 + Math.random() * 0.05,
@@ -102,7 +128,7 @@ export function init() {
   }
   const objs = store.get('data').objects ?? [];
   records = objs.map((o) => {
-    try { return { cls: o.class, satrec: sat.json2satrec(o.omm) }; } catch { return null; }
+    try { return { id: o.id, cls: o.class, satrec: sat.json2satrec(o.omm) }; } catch { return null; }
   }).filter(Boolean);
   const colors = { debris: css('--cls-debris'), manoeuvrable: css('--cls-manoeuvrable'), autonomous: css('--cls-autonomous'), crewed: css('--cls-crewed'), fragment: css('--warn-strong') };
   globe = window.Globe()(el)
@@ -141,6 +167,6 @@ export function init() {
 export function focus() {
   const ep = currentEpisode();
   if (!globe || !ep) return;
-  const site = encounterSite(ep.id);
+  const site = siteOf(ep);
   globe.pointOfView({ lat: site.lat, lng: site.lng, altitude: 2.2 }, reduced ? 0 : 1200);
 }

@@ -13,6 +13,17 @@ export function latestKey(explanations, epId, variant, i) {
   return null;
 }
 
+// The latest step up to i worth explaining: the first decision, an escalation, a burn or a note (mirrors sim/explain.py).
+export function latestInteresting(steps, i) {
+  const firstVerdict = steps.findIndex((s) => s.verdict);
+  for (let k = Math.min(i, steps.length - 1); k >= 0; k -= 1) {
+    const s = steps[k];
+    const burn = Object.values(s.actions ?? {}).some((a) => a && [1, 2, 4].includes(a.action));
+    if (k === firstVerdict || s.escalation || burn || s.note) return k;
+  }
+  return null;
+}
+
 function template(ep, steps, i) {
   const v = latestVerdict(steps, i);
   if (!v) return 'No close approach has been detected yet.';
@@ -46,17 +57,18 @@ function render() {
   const i = Math.min(store.get('stepIndex'), steps.length - 1);
   const ex = store.get('data').explanations;
   const branched = store.get('branch') && i > store.get('branch').index;
-  const found = branched ? null : latestKey(ex, ep.id, ep.variant, i);
+  const idx = branched ? null : latestInteresting(steps, i);
+  const key = idx === null ? null : `${ep.id}.${ep.variant}:${idx}`;
+  const found = key !== null && ex && ex[key] ? { key, index: idx } : (branched ? null : latestKey(ex, ep.id, ep.variant, i));
   const live = store.get('live');
-  const liveOn = Boolean(live && live.explain) && Boolean(found);
-  const key = found ? `${ep.id}.${ep.variant}:${found.index}` : null;
+  const liveOn = Boolean(live && live.explain) && key !== null;
   const got = liveOn ? liveText.get(key) : null;
-  if (liveOn && !got) requestLive(ep, found.index, key);
+  if (liveOn && !got) requestLive(ep, idx, key);
   clear(panel);
   panel.append(h('div', { class: 'panel-title', text: 'Why this decision' }));
   if (got && got.text) {
     panel.append(h('p', { style: { margin: 0, fontSize: '16px', lineHeight: '1.6' }, text: got.text }),
-      h('div', { class: 'small muted', text: `Written just now for ${tMinus(steps[found.index].t_min)} by the local language model from the decision data${got.source === 'template' ? ' (offline template: the model did not answer)' : ''}.` }));
+      h('div', { class: 'small muted', text: `Written just now for ${tMinus(steps[idx].t_min)} by the local language model from the decision data${got.source === 'template' ? ' (offline template: the model did not answer)' : ''}.` }));
   } else if (found) {
     panel.append(h('p', { style: { margin: 0, fontSize: '16px', lineHeight: '1.6' }, text: ex[found.key] }),
       h('div', { class: 'small muted', text: `Written for ${tMinus(steps[found.index].t_min)} by a local open-weight language model from the decision data.` }));
@@ -64,6 +76,7 @@ function render() {
   } else {
     panel.append(h('p', { style: { margin: 0, fontSize: '16px', lineHeight: '1.6' }, text: template(ep, steps, i) }),
       h('div', { class: 'small muted', text: 'Generated from the decision data (template).' }));
+    if (liveOn && !got) panel.append(h('div', { class: 'small muted', 'data-testid': 'explain-live-pending', text: 'Asking the local language model for a fresh explanation…' }));
   }
 }
 

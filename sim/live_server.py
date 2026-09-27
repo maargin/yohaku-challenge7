@@ -21,7 +21,9 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import contracts, explain
+from collections import OrderedDict
+
+from . import contracts, explain, live_episode
 
 CAPABILITIES = ("debris", "manoeuvrable", "autonomous", "crewed")
 PURPOSES = ("public_good", "commercial", "none")
@@ -232,10 +234,15 @@ class Services:
         self.policy_json = None
         self.actor = self.norm = None
         self.episodes = []
+        self.live_eps = OrderedDict()   # live pair scenarios, newest last, so their steps can be explained
         try:
             self.policy_json = contracts.read_json("policy", web / "data" / "policy.json")
         except Exception:
             self.policy_json = None
+        try:
+            self.objects = live_episode.load_objects(web / "data" / "objects.json")
+        except Exception:
+            self.objects = {}
         if policy_dir:
             from .evaluate import load_policy
             self.actor, self.norm, _ = load_policy(policy_dir, "cpu")
@@ -255,9 +262,21 @@ class Services:
         with self.lock:
             return run_live(spec, self.actor, self.norm)
 
+    def pair(self, a, b, geometry, fuel):
+        """A live scenario for two catalogue objects, run by the episode simulator with the shipped policy."""
+        if self.policy_json is None or a not in self.objects or b not in self.objects or a == b:
+            raise Invalid("unknown objects")
+        spec = live_episode.build_spec(self.objects[a], self.objects[b], fuel=fuel, **geometry)
+        with self.lock:
+            ep = live_episode.run_pair(spec, self.policy_json)
+            self.live_eps[ep["id"]] = ep
+            while len(self.live_eps) > 32:
+                self.live_eps.popitem(last=False)
+        return ep
+
     def explain_step(self, ep_id, variant, i):
         with self.lock:
-            eps = self.episodes
+            eps = list(self.episodes) + list(self.live_eps.values())
         ep = next((e for e in eps if e["id"] == ep_id and e.get("variant", "rules") == variant), None)
         if ep is None or not (0 <= i < len(ep["steps"])):
             raise Invalid("unknown step")
@@ -303,7 +322,8 @@ def make_handler(web, headers, svc):
             path = self.path.split("?")[0]
             if path == "/api/health":
                 return self._json(200, {"explain": svc.can_explain, "run": svc.actor is not None,
-                                        "episodes": svc.policy_json is not None})
+                                        "episodes": svc.policy_json is not None,
+                                        "pair": bool(svc.objects) and svc.policy_json is not None})
             if path == "/api/episodes":
                 if svc.policy_json is None:
                     return self._json(404, {"error": "not found"})
@@ -329,6 +349,24 @@ def make_handler(web, headers, svc):
                 if path == "/api/explain":
                     text, source = explanation(validate(self._body()), svc.endpoint, svc.model)
                     return self._json(200, {"text": text, "source": source})
+                if path == "/api/episode":
+                    p = self._body()
+                    if not isinstance(p, dict):
+                        raise Invalid("expected an object")
+                    ids = []
+                    for k in ("a", "b"):
+                        v = p.get(k)
+                        if isinstance(v, bool) or not isinstance(v, int) or not (0 < v < 10 ** 9):
+                            raise Invalid("bad object id")
+                        ids.append(v)
+                    geometry = {"miss_m": _num(p.get("miss_m", 80.0), 0.0, 3000.0),
+                                "sigma0_m": _num(p.get("sigma0_m", 1200.0), 30.0, 5000.0),
+                                "sigma_min_m": _num(p.get("sigma_min_m", 100.0), 30.0, 5000.0)}
+                    fuel = {}
+                    for k, oid in (("fuel_a", ids[0]), ("fuel_b", ids[1])):
+                        if p.get(k) is not None:
+                            fuel[oid] = _num(p.get(k), 0.0, 1.0)
+                    return self._json(200, svc.pair(ids[0], ids[1], geometry, fuel))
                 if path == "/api/explain-step":
                     p = self._body()
                     if not isinstance(p, dict):

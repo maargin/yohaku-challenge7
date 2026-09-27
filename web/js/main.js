@@ -15,6 +15,7 @@ import * as explain from './explain.js';
 import * as replay from './replay.js';
 import * as results from './results.js';
 import * as live from './live.js';
+import * as pair from './pair.js';
 import * as globe from './globe.js';
 
 install();
@@ -48,14 +49,14 @@ async function probeLive() {
     const res = await fetch('api/health', { signal: ctrl.signal, credentials: 'omit' });
     if (!res.ok) return null;
     const j = await res.json();
-    return { explain: j.explain === true, run: j.run === true, episodes: j.episodes === true };
+    return { explain: j.explain === true, run: j.run === true, episodes: j.episodes === true, pair: j.pair === true };
   } catch { return null; } finally { clearTimeout(timer); }
 }
 
 async function start() {
   guard('theme', theme.init)();
   tabs();
-  const liveCfg = (await probeLive()) ?? { explain: false, run: false, episodes: false };
+  const liveCfg = (await probeLive()) ?? { explain: false, run: false, episodes: false, pair: false };
   store.set('live', liveCfg);
   const { failed } = await loadAll(store, liveCfg.episodes ? { urls: { episodes: 'api/episodes' } } : {});
   if (liveCfg.episodes && !failed.episodes) {
@@ -77,6 +78,7 @@ async function start() {
   guard('replay', replay.init)();
   guard('results', results.init)();
   guard('live', live.init)();
+  guard('pair', pair.init)();
   const startGlobe = guard('globe', globe.init);
   if (typeof window.Globe === 'function') startGlobe();
   else window.addEventListener('load', startGlobe, { once: true });
