@@ -51,7 +51,7 @@ for (const [src, dst] of files) {
     mkdirSync(dirname(to), { recursive: true });
     copyFileSync(from, to);
   }
-  lines.push(`${sha(from)}  web/${dst.split('\\').join('/')}`);
+  lines.push(`${sha(to)}  web/${dst.split('\\').join('/')}`);
 }
 lines.sort((a, b) => a.slice(66).localeCompare(b.slice(66)));
 const sumsPath = join(web, 'vendor', 'CHECKSUMS.txt');
