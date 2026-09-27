@@ -151,7 +151,10 @@ function draw() {
   // hard-body circle around the object that holds course
   circle(cx, cy, Math.max(3, RADIUS_M * scale), css('--warn'), null);
   ctx.fillStyle = css('--warn');
-  ctx.fillText(`${RADIUS_M} m hard body`, cx + 10, cy + Math.max(3, RADIUS_M * scale) + 16);
+  const side = g.mover === 1 ? -1 : 1;   // labels of the object at the centre sit on the side away from the mover
+  ctx.textAlign = side < 0 ? 'right' : 'left';
+  ctx.fillText(`${RADIUS_M} m hard body`, cx + side * 12, cy + Math.max(3, RADIUS_M * scale) + 16);
+  ctx.textAlign = 'left';
 
   // miss vector
   ctx.strokeStyle = css('--text-2');
@@ -163,7 +166,9 @@ function draw() {
   ctx.setLineDash([]);
   ctx.fillStyle = css('--text-2');
   const near = Math.hypot(P.x - cx, P.y - cy) < 70;
-  ctx.fillText(`miss ${fmtM(frame.miss)}`, near ? cx + 10 : (cx + P.x) / 2 + 6, near ? cy + Math.max(3, RADIUS_M * scale) + 32 : (cy + P.y) / 2 - 6);
+  ctx.textAlign = near && side < 0 ? 'right' : 'left';
+  ctx.fillText(`miss ${fmtM(frame.miss)}`, near ? cx + side * 12 : (cx + P.x) / 2 + 6, near ? cy + Math.max(3, RADIUS_M * scale) + 32 : (cy + P.y) / 2 - 6);
+  ctx.textAlign = 'left';
 
   // the burn: the pass point moves out along the track
   if (burned) {
@@ -179,7 +184,9 @@ function draw() {
   // the two objects
   circle(cx, cy, 6, css('--bg'), css(`--cls-${standOn.cls}`));
   ctx.fillStyle = css('--text');
-  ctx.fillText(`${standOn.name} · holds`, cx + 10, cy - 12);
+  ctx.textAlign = side < 0 ? 'right' : 'left';
+  ctx.fillText(`${standOn.name} · holds`, cx + side * 12, cy - 12);
+  ctx.textAlign = 'left';
   circle(mx, P.y, 6, css('--bg'), css(`--cls-${mover.cls}`));
   ctx.textAlign = g.mover === 1 ? 'right' : 'left';
   ctx.fillText(`${mover.name}${burned || mover.burned ? ' · moved' : frame.yielder === null ? '' : ' · must move'}`, g.mover === 1 ? mx - 10 : mx + 10, P.y + 22);
