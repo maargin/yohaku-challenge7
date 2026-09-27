@@ -249,7 +249,12 @@ function draw() {
     if (k < STAGES.length - 1) { ctx.fillStyle = css('--text-4'); ctx.fillText('›', sx - 5, 20); sx += 8; }
   });
 
-  if (hud) hud.textContent = `${tMinus(frame.t)} · σ ${fmtM(frame.sigma)} · Pc ${pcText(frame.pc)} · miss ${fmtM(frame.miss)}${st.burned && Math.abs(frame.missAfter - frame.miss) > 0.5 ? ` → ${fmtM(frame.missAfter)}` : ''}`;
+  const readout = `${tMinus(frame.t)} · σ ${fmtM(frame.sigma)} · Pc ${pcText(frame.pc)} · miss ${fmtM(frame.miss)}${st.burned && Math.abs(frame.missAfter - frame.miss) > 0.5 ? ` → ${fmtM(frame.missAfter)}` : ''}`;
+  if (hud) hud.textContent = readout;
+  ctx.fillStyle = css('--text-2');
+  ctx.textAlign = 'right';
+  ctx.fillText(readout, right, H - 8);
+  ctx.textAlign = 'left';
   if (announcer && lastAnnounced !== frame.index) {
     lastAnnounced = frame.index;
     announcer.textContent = `${tMinus(frame.t)}: ${verdict.toLowerCase()}; uncertainty ${fmtM(frame.sigma)}.`;
