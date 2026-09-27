@@ -58,9 +58,9 @@ def template(ep, i):
     return " ".join(parts)[:MAX_CHARS] or "No decision needed at this step."
 
 
-def ask(endpoint, model, prompt, timeout=60):
+def ask(endpoint, model, prompt, timeout=60, system=SYSTEM):
     body = {"model": model, "temperature": 0.2, "max_tokens": 160,
-            "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
             "chat_template_kwargs": {"enable_thinking": False}}
     req = urllib.request.Request(endpoint.rstrip("/") + "/chat/completions", data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})

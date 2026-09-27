@@ -3,7 +3,7 @@ import { install, guard, toast } from './errors.js';
 import { store } from './state.js';
 import { loadAll } from './data.js';
 import { log } from './log.js';
-import { $, $$ } from './dom.js';
+import { $, $$, h } from './dom.js';
 import * as theme from './theme.js';
 import * as playback from './playback.js';
 import * as events from './events.js';
@@ -40,10 +40,28 @@ function tabs() {
   });
 }
 
+// The live server (same origin) is optional: without it every panel uses the pre-built data files.
+async function probeLive() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 3000);
+  try {
+    const res = await fetch('api/health', { signal: ctrl.signal, credentials: 'omit' });
+    if (!res.ok) return null;
+    const j = await res.json();
+    return { explain: j.explain === true, run: j.run === true, episodes: j.episodes === true };
+  } catch { return null; } finally { clearTimeout(timer); }
+}
+
 async function start() {
   guard('theme', theme.init)();
   tabs();
-  const { failed } = await loadAll(store);
+  const live = (await probeLive()) ?? { explain: false, run: false, episodes: false };
+  store.set('live', live);
+  const { failed } = await loadAll(store, live.episodes ? { urls: { episodes: 'api/episodes' } } : {});
+  if (live.episodes && !failed.episodes) {
+    $('.mc-bar .spacer').before(h('span', { class: 'badge ok', 'data-testid': 'live-badge',
+      text: `Live: scenarios decided by the simulator at ${new Date().toLocaleTimeString('en-GB')}` }));
+  }
   if (Object.keys(failed).length) toast('Some demo data could not be loaded; affected panels show a notice.');
   if (!store.get('data').episodes) {
     $('#verdict-title').textContent = 'Scenario data unavailable';

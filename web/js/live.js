@@ -86,6 +86,70 @@ function fillForm(root, spec) {
   $('#live-sigmamin', root).value = spec.sigma_min_m;
 }
 
+function specPayload(spec) {
+  return {
+    agents: spec.agents.map((a) => ({ name: a.name, capability: a.capability, purpose: a.purpose, fuel: a.fuel, ledger: a.ledger, silent: a.silent })),
+    encounter: { miss_m: spec.m0_m, offset_m: spec.p0_m, sigma0_m: spec.sigma0_m, sigma_min_m: spec.sigma_min_m },
+  };
+}
+
+function validRun(j) {
+  const num = (x) => typeof x === 'number' && Number.isFinite(x);
+  return Boolean(j) && Array.isArray(j.steps) && j.steps.length > 0 && Boolean(j.final) && num(j.final.miss)
+    && typeof j.collision === 'boolean' && typeof j.human === 'boolean' && Array.isArray(j.reasons)
+    && j.steps.every((s) => num(s.t) && num(s.miss) && num(s.pc) && [s.iYields, s.probs, s.chosen, s.executed, s.dv, s.why].every(Array.isArray)
+      && s.probs.length === 2 && s.probs.every((row) => Array.isArray(row) && row.length === ACTION_LABELS.length && row.every(num))
+      && s.chosen.every((a) => Number.isInteger(a) && a >= 0 && a < ACTION_LABELS.length)
+      && s.executed.every((a) => Number.isInteger(a) && a >= 0 && a < ACTION_LABELS.length) && s.dv.every(num));
+}
+
+// Ask the simulator on the server to run the encounter; null when it is absent, slow or answers badly.
+async function runOnServer(spec) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const res = await fetch('api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(specPayload(spec)), signal: ctrl.signal, credentials: 'omit' });
+    if (!res.ok) return null;
+    const j = await res.json();
+    return validRun(j) ? j : null;
+  } catch { return null; } finally { clearTimeout(timer); }
+}
+
+function explainPayload(spec, result) {
+  const first = result.steps.find((s) => s.iYields.some(Boolean));
+  return {
+    ...specPayload(spec),
+    outcome: {
+      collision: result.collision, final_miss_m: Math.round(result.final.miss),
+      yielder: first ? first.iYields.indexOf(true) : null, human: result.human, reasons: result.reasons,
+      burns: result.steps.flatMap((s) => s.dv.map((d, i) => (d > 0 ? { agent: i, t_min: s.t, dv_ms: d } : null)).filter(Boolean)),
+      interventions: result.steps.flatMap((s) => s.why.map((w, i) => (w ? { agent: i, t_min: s.t, text: w } : null)).filter(Boolean)),
+    },
+  };
+}
+
+function explainCard(spec, result) {
+  const out = h('p', { class: 'small', style: { margin: '0' } });
+  const btn = h('button', { type: 'button', class: 'btn', 'data-testid': 'live-explain', text: 'Explain this decision' });
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    out.textContent = 'Asking the local language model…';
+    try {
+      const res = await fetch('api/explain', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(explainPayload(spec, result)), credentials: 'omit' });
+      if (!res.ok) throw new Error(String(res.status));
+      const j = await res.json();
+      if (typeof j.text !== 'string' || !j.text) throw new Error('empty');
+      out.textContent = j.text.slice(0, 600) + (j.source === 'template' ? ' (offline template: the language model did not answer)' : '');
+    } catch {
+      out.textContent = 'The explainer did not answer. The table above is the full record.';
+      btn.disabled = false;
+    }
+  });
+  return h('div', { class: 'card' }, h('span', { class: 'small muted', text: 'Plain-language explanation (local language model)' }), btn, out);
+}
+
 function verdictText(out, spec) {
   const names = spec.agents.map((a) => a.name);
   const first = out.steps.find((s) => s.iYields.some(Boolean));
@@ -135,20 +199,28 @@ export function init() {
     h('div', { class: 'cta' }, h('button', { type: 'submit', class: 'btn btn-primary', 'data-testid': 'live-run', text: 'Run the AI' })),
   );
   preset.addEventListener('change', () => fillForm(root, PRESETS[preset.value]));
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const spec = readForm(root);
-    const result = createEncounter(spec).run(policy);
+    const live = store.get('live') ?? {};
+    clear(out);
+    out.append(h('p', { class: 'muted', text: live.run ? 'Running on the simulator…' : 'Running…' }));
+    const fromServer = live.run ? await runOnServer(spec) : null;
+    const result = fromServer ?? createEncounter(spec).run(policy);
     const names = spec.agents.map((a) => a.name);
     clear(out);
     out.append(
+      h('p', { class: 'small muted', 'data-testid': 'live-source', style: { margin: '0' }, text: fromServer
+        ? `Decided by the simulator and the trained policy on the server at ${new Date().toLocaleTimeString('en-GB')}.`
+        : `Decided by the browser copy of the simulator${live.run ? ' (the server did not answer)' : ''}.` }),
       h('div', { class: `card live-verdict ${result.collision ? 'bad' : 'ok'}`, 'data-testid': 'live-verdict' },
         ...verdictText(result, spec).map((t, i) => h(i === 0 ? 'b' : 'span', { class: i === 0 ? 'verdict-title' : 'small', text: t }))),
       h('div', { class: 'table-wrap' }, h('table', { class: 'results live-table' },
         h('thead', {}, h('tr', {}, ...['Time', 'Miss', 'Collision prob.', `${names[0]} proposes`, 'Safety layer', `${names[1]} proposes`, 'Safety layer']
           .map((t) => h('th', { scope: 'col', text: t })))),
         h('tbody', {}, ...result.steps.map((s, k) => stepRow(s, k, names))))),
-      h('p', { class: 'small muted', text: 'Each row is one 10-minute step. "Proposes" is the AI\'s own choice with its confidence; "Safety layer" shows when that choice was changed and why. The plain-language explanation is generated offline for the recorded scenarios and is not available here.' }),
+      live.explain ? explainCard(spec, result) : null,
+      h('p', { class: 'small muted', text: `Each row is one 10-minute step. "Proposes" is the AI's own choice with its confidence; "Safety layer" shows when that choice was changed and why.${live.explain ? '' : ' The plain-language explanation is generated offline for the recorded scenarios and is not available here.'}` }),
     );
     out.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });

@@ -2,11 +2,11 @@
 import { validate, KINDS } from './validate.js';
 import { log } from './log.js';
 
-export async function loadOne(kind, { fetchImpl = globalThis.fetch, base = 'data/', timeoutMs = 15000 } = {}) {
+export async function loadOne(kind, { fetchImpl = globalThis.fetch, base = 'data/', timeoutMs = 15000, url = null } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetchImpl(`${base}${kind}.json`, { signal: ctrl.signal, credentials: 'omit' });
+    const res = await fetchImpl(url ?? `${base}${kind}.json`, { signal: ctrl.signal, credentials: 'omit' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     return validate(kind, JSON.parse(text));
@@ -16,7 +16,14 @@ export async function loadOne(kind, { fetchImpl = globalThis.fetch, base = 'data
 }
 
 export async function loadAll(store, opts = {}) {
-  const results = await Promise.allSettled(KINDS.map((k) => loadOne(k, opts)));
+  const urls = opts.urls ?? {};
+  const results = await Promise.allSettled(KINDS.map(async (k) => {
+    if (!urls[k]) return loadOne(k, opts);
+    try { return await loadOne(k, { ...opts, url: urls[k] }); } catch (err) {
+      log.warn('live source unavailable; using the static file', { kind: k, reason: String(err && err.message) });
+      return loadOne(k, opts);
+    }
+  }));
   const data = {};
   const failed = {};
   results.forEach((r, i) => {
