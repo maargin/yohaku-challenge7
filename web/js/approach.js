@@ -140,12 +140,14 @@ function draw() {
   circle(P.x, P.y, shown.sigma * scale, riskColor, null);
   ctx.globalAlpha = 1;
   ctx.fillStyle = css('--text-3');
-  ctx.fillText(`σ ${fmtM(frame.sigma)}`, P.x + shown.sigma * scale * 0.7071 + 4, P.y - shown.sigma * scale * 0.7071 + 12);
+  ctx.textAlign = 'center';
+  ctx.fillText(`σ ${fmtM(frame.sigma)}`, P.x, P.y - shown.sigma * scale - 6);
+  ctx.textAlign = 'left';
 
   // hard-body circle around the object that holds course
   circle(cx, cy, Math.max(3, RADIUS_M * scale), css('--warn'), null);
   ctx.fillStyle = css('--warn');
-  ctx.fillText(`${RADIUS_M} m hard body`, cx + Math.max(3, RADIUS_M * scale) + 6, cy + 4);
+  ctx.fillText(`${RADIUS_M} m hard body`, cx + 10, cy + Math.max(3, RADIUS_M * scale) + 16);
 
   // miss vector
   ctx.strokeStyle = css('--text-2');
@@ -172,9 +174,9 @@ function draw() {
   // the two objects
   circle(cx, cy, 6, css('--bg'), css(`--cls-${standOn.cls}`));
   ctx.fillStyle = css('--text');
-  ctx.fillText(`${standOn.name} · holds`, cx + 10, cy - 10);
+  ctx.fillText(`${standOn.name} · holds`, cx + 10, cy - 12);
   circle(mx, P.y, 6, css('--bg'), css(`--cls-${mover.cls}`));
-  ctx.fillText(`${mover.name}${burned || mover.burned ? ' · moved' : frame.yielder === null ? '' : ' · must move'}`, mx + 10, P.y - 10);
+  ctx.fillText(`${mover.name}${burned || mover.burned ? ' · moved' : frame.yielder === null ? '' : ' · must move'}`, mx + 10, P.y + 22);
 
   if (hud) hud.textContent = `${tMinus(frame.t)} · σ ${fmtM(frame.sigma)} · Pc ${pcText(frame.pc)} · miss ${fmtM(frame.miss)}${burned ? ` → ${fmtM(frame.missAfter)}` : ''}`;
   if (announcer && lastAnnounced !== frame.index) {
