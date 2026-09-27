@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the System — coordination in orbital mixed traffic</title>
+<meta name="description" content="A decentralised coordination layer for crowded orbit, built for Challenge 7 of YOHAKU 2026.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+
+<!-- Pinned. satellite.js 7.x dropped its browser bundle, so stay on 6.0.2. -->
+<script src="https://cdn.jsdelivr.net/npm/satellite.js@6.0.2/dist/satellite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/globe.gl@2.46.2/dist/globe.gl.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@18.0.14/lib/marked.umd.js"></script>
+</head>
+<body>
+
+<!-- ============================ HERO ============================ -->
+<header class="section" id="hero">
+  <div class="wrap stack gap-5">
+    <div class="row gap-3">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--accent)" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+        <path d="M10 18 V11"/><path d="M10 11 L4.6 6.2"/><path d="M10 11 L15.4 6.2"/>
+        <path d="M4.6 6.2 L2.4 3.2"/><path d="M4.6 6.2 L6.6 2.6"/>
+        <path d="M15.4 6.2 L17.6 3.2"/><path d="M15.4 6.2 L13.4 2.6"/>
+      </svg>
+      <span style="font-family: var(--font-display); font-size: 23px">the System</span>
+      <span class="grow"></span>
+      <button type="button" class="btn" id="theme-toggle" aria-label="Switch colour theme">Light</button>
+    </div>
+
+    <p class="mono eyebrow" style="color: var(--accent)">Challenge 7 · fungi, AI and shared decisions in orbit</p>
+    <h1 style="max-width: 15ch">Nobody has right of way in orbit.</h1>
+    <p class="prose" style="font-size: 19px; color: var(--text-2)">
+      Two satellites are about to pass too close. Someone has to move. There is no rule that
+      says who, no shared record of what was agreed, and increasingly no human in the loop.
+    </p>
+
+    <div class="row gap-3">
+      <a class="btn btn--primary" href="#mission-control">Launch demo</a>
+      <button type="button" class="btn btn--ghost" data-action="replay-2019">Replay September 2019</button>
+    </div>
+
+    <div class="stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--sp-5); margin-top: var(--sp-4)">
+      <div class="stack gap-2" style="border-top: 1px solid var(--line); padding-top: var(--sp-4)">
+        <span class="stat-num">207,152</span>
+        <span style="color: var(--text-2); font-size: 13.5px">collision-avoidance manoeuvres reported by one operator in six months</span>
+      </div>
+      <div class="stack gap-2" style="border-top: 1px solid var(--line); padding-top: var(--sp-4)">
+        <span class="stat-num">41,700</span>
+        <span style="color: var(--text-2); font-size: 13.5px">objects tracked in orbit. 11,600 still work. <span class="faint">ESA, May 2025</span></span>
+      </div>
+      <div class="stack gap-2" style="border-top: 1px solid var(--line); padding-top: var(--sp-4)">
+        <span class="stat-num">0</span>
+        <span style="color: var(--text-2); font-size: 13.5px">universal right-of-way rules. In 2019 two operators coordinated by email and one message went unseen</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ====================== MISSION CONTROL ======================= -->
+<section id="mission-control" aria-label="Mission control">
+
+  <div class="topbar">
+    <label class="eyebrow" for="episode-picker">Episode</label>
+    <select class="select" id="episode-picker"></select>
+
+    <div class="row gap-2">
+      <button type="button" class="btn btn--icon" id="play-toggle" aria-label="Play time-lapse">
+        <svg width="12" height="13" viewBox="0 0 12 13" fill="currentColor" aria-hidden="true"><path d="M1 1 L11 6.5 L1 12 Z"/></svg>
+      </button>
+      <span class="mono" id="clock" style="font-size: 14px">T−00:00</span>
+      <select class="select" id="speed-picker" aria-label="Playback speed">
+        <option value="60">60×</option>
+        <option value="300">300×</option>
+        <option value="600" selected>600×</option>
+        <option value="1200">1200×</option>
+      </select>
+    </div>
+
+    <span class="grow"></span>
+
+    <button type="button" class="btn" data-action="replay-2019">Replay 2019</button>
+    <button type="button" class="btn" data-action="kessler">What if we fail?</button>
+
+    <div class="segmented" role="group" aria-label="Decision mode">
+      <button type="button" data-mode="rules" aria-pressed="false">Rules only</button>
+      <button type="button" data-mode="ai" aria-pressed="true">AI</button>
+    </div>
+
+    <span class="badge" id="api-badge" data-state="offline"><span class="dot"></span>OFFLINE</span>
+  </div>
+
+  <div class="mc">
+
+    <!-- left rail: events + autonomy -->
+    <aside class="mc__rail stack gap-4">
+      <div class="row" style="justify-content: space-between; align-items: baseline">
+        <span class="eyebrow">Conjunction events</span>
+        <span class="mono dim" id="event-count">0</span>
+      </div>
+      <div class="stack gap-2" id="event-list"></div>
+
+      <span class="grow"></span>
+
+      <div class="stack gap-3" style="border-top: 1px solid var(--line); padding-top: var(--sp-4)">
+        <span class="eyebrow">Autonomy level</span>
+        <div class="autonomy" id="autonomy">
+          <span data-level="L0">L0</span><span data-level="L1">L1</span>
+          <span data-level="L2" data-active="true">L2</span>
+          <span data-level="L3">L3</span><span data-level="L4">L4</span>
+        </div>
+        <p class="faint" style="font-size: 12px; margin: 0">
+          Escalation triggers are hard rules outside the policy. The model cannot learn to avoid calling a human.
+        </p>
+      </div>
+
+      <div class="stack gap-2" id="decision-log-wrap" hidden>
+        <span class="eyebrow">Human decisions</span>
+        <ol class="decision-log" id="decision-log"></ol>
+      </div>
+    </aside>
+
+    <!-- centre: globe, legend, verdict -->
+    <main class="mc__stage">
+      <div class="mc__globe" id="globe"></div>
+
+      <div class="row gap-4" style="padding: var(--sp-2) var(--sp-4); font-size: 11px; color: var(--text-dim); flex-wrap: wrap">
+        <span class="row gap-2"><span class="class-dot" data-class="debris"></span>debris</span>
+        <span class="row gap-2"><span class="class-dot" data-class="manoeuvrable"></span>manoeuvrable</span>
+        <span class="row gap-2"><span class="class-dot" data-class="autonomous"></span>autonomous</span>
+        <span class="row gap-2"><span class="class-dot" data-class="crewed"></span>crewed</span>
+        <span class="faint" style="margin-left: auto">Data: CelesTrak</span>
+      </div>
+
+      <div class="panel" style="margin: 0 var(--sp-4) var(--sp-4)" id="verdict-strip" hidden>
+        <div class="row" style="justify-content: space-between; align-items: baseline; margin-bottom: var(--sp-3)">
+          <span class="eyebrow">Who yields</span>
+          <span class="mono faint" style="font-size: 11px" id="verdict-meta"></span>
+        </div>
+        <dl class="verdict">
+          <dt>DECLARED</dt><dd class="stack gap-2" id="verdict-declared"></dd>
+          <dt>LADDER</dt><dd><div class="ladder" id="verdict-ladder"></div></dd>
+          <dt class="is-verdict">VERDICT</dt><dd class="stack gap-2" id="verdict-result"></dd>
+        </dl>
+      </div>
+    </main>
+
+    <!-- right rail: tabs -->
+    <aside class="mc__rail mc__rail--right">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tab-brain" aria-controls="panel-brain" aria-selected="false">AI Brain</button>
+        <button type="button" role="tab" id="tab-handshake" aria-controls="panel-handshake" aria-selected="true">Handshake</button>
+        <button type="button" role="tab" id="tab-explain" aria-controls="panel-explain" aria-selected="false">Explanation</button>
+        <button type="button" role="tab" id="tab-ledger" aria-controls="panel-ledger" aria-selected="false">Ledger</button>
+      </div>
+      <div class="tabpanel" role="tabpanel" id="panel-brain" aria-labelledby="tab-brain" hidden></div>
+      <div class="tabpanel" role="tabpanel" id="panel-handshake" aria-labelledby="tab-handshake"></div>
+      <div class="tabpanel" role="tabpanel" id="panel-explain" aria-labelledby="tab-explain" hidden></div>
+      <div class="tabpanel" role="tabpanel" id="panel-ledger" aria-labelledby="tab-ledger" hidden></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ========================= KESSLER FINALE (F11) =============== -->
+<div class="kessler" id="kessler" hidden>
+  <div class="kessler__vignette" aria-hidden="true"></div>
+  <div class="kessler__card" role="status" aria-live="polite">
+    <span class="eyebrow">What if we fail?</span>
+    <p class="kessler__lead">One collision. Every fragment is a new hazard for every orbit it crosses.</p>
+    <p class="mono kessler__count" id="kessler-count"></p>
+    <p class="faint kessler__note">
+      Illustrative. The 2009 collision between Iridium 33 and Cosmos 2251 had produced
+      1,632 catalogued fragments within ten months (Wang, 2010).
+    </p>
+    <button type="button" class="btn" data-kessler="reset">Reset the sky</button>
+  </div>
+</div>
+
+<!-- ========================= 2019 REPLAY (F10) =================== -->
+<dialog class="replay" id="replay-2019" aria-labelledby="replay-title">
+  <div class="replay__head">
+    <div class="stack gap-1">
+      <span class="eyebrow">Replay</span>
+      <h2 id="replay-title">September 2019: Aeolus and Starlink 44</h2>
+      <p class="faint" style="font-size: 12px; margin: 0">
+        Scripted from ESA's published timeline, with SpaceX's statement on the missed messages.
+        The right-hand column is a counterfactual: who moves is computed by the rules, not scripted.
+      </p>
+    </div>
+    <div class="row gap-2" style="align-self: flex-start">
+      <button type="button" class="btn" id="replay-pause">Pause</button>
+      <button type="button" class="btn" id="replay-skip">Skip to end</button>
+      <button type="button" class="btn btn--icon" id="replay-close" aria-label="Close replay">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M1.5 1.5 L10.5 10.5 M10.5 1.5 L1.5 10.5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="replay__progress" aria-hidden="true"><span id="replay-bar"></span></div>
+
+  <div class="replay__cols" aria-hidden="true">
+    <span class="replay__colhead">Email world <span class="faint">what happened</span></span>
+    <span></span>
+    <span class="replay__colhead replay__colhead--system">the System <span class="faint">what would have happened</span></span>
+  </div>
+
+  <ol class="replay__beats" id="replay-beats" aria-live="polite"></ol>
+
+  <div class="replay__end" id="replay-end" hidden>
+    <p style="margin: 0; font-size: 16px; line-height: 1.55">
+      Same satellites, same data. In the email world the outcome hung on one message being read.
+      In the System the plan was agreed before the risk grew, so there was nothing to miss.
+    </p>
+    <p class="faint" style="margin: 0; font-size: 12.5px">
+      ESA said no one was at fault. Its point was that without traffic rules or communication
+      protocols, avoiding a collision depends on the goodwill of the operators involved.
+      Probabilities in the left column are as reported by ESA and SpaceX; those in the System are illustrative.
+    </p>
+    <div class="row gap-3" style="flex-wrap: wrap">
+      <button type="button" class="btn btn--primary" id="replay-watch">Watch it on the globe</button>
+      <button type="button" class="btn btn--ghost" id="replay-again">Replay again</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- =========================== RESULTS (F12) ==================== -->
+<section class="section" id="results" aria-labelledby="results-title">
+  <div class="wrap stack gap-5">
+    <div class="stack gap-2">
+      <span class="eyebrow">Results</span>
+      <h2 id="results-title">Does it actually work?</h2>
+      <p class="prose faint" style="margin: 0">
+        Our system against simpler strategies on simulated test scenarios. Lower is better in every column.
+        Linearised dynamics, so the figures are illustrative.
+      </p>
+    </div>
+    <p class="faint" id="results-empty" style="margin: 0">Results appear here once the evaluation has run.</p>
+    <div class="stack gap-5" id="results-body" hidden>
+      <div class="matrix-scroll"><table class="matrix results__table" id="results-table"></table></div>
+      <div class="results__charts">
+        <figure class="results__chart" hidden>
+          <figcaption class="results__chart-title"></figcaption>
+          <div class="results__canvas"><canvas id="chart-collisions"></canvas></div>
+        </figure>
+        <figure class="results__chart" hidden>
+          <figcaption class="results__chart-title"></figcaption>
+          <div class="results__canvas"><canvas id="chart-dv"></canvas></div>
+        </figure>
+        <figure class="results__chart" hidden>
+          <figcaption class="results__chart-title"></figcaption>
+          <div class="results__canvas"><canvas id="chart-fairness"></canvas></div>
+        </figure>
+      </div>
+      <div class="results__plots" id="results-plots" hidden></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= HOW IT WORKS ======================= -->
+<section class="section" id="how-it-works" aria-labelledby="hiw-title">
+  <div class="wrap stack gap-5">
+    <div class="stack gap-2">
+      <span class="eyebrow">How it works</span>
+      <h2 id="hiw-title">Borrow the fungus's architecture, not its morality.</h2>
+    </div>
+    <div class="hiw__heads" aria-hidden="true">
+      <span>In a fungal network</span><span></span><span>In the System</span>
+    </div>
+    <ol class="hiw">
+      <li class="hiw__row">
+        <div class="hiw__card"><p>Hyphal tips sense and respond locally.</p></div>
+        <svg class="hiw__link" viewBox="0 0 120 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 H120" /><path d="M34 30 Q42 18 52 14" /><path d="M78 30 Q86 42 96 46" /><circle cx="120" cy="30" r="3" /></svg>
+        <div class="hiw__card hiw__card--system"><p>Every satellite carries the same small trained policy, which senses risk and decides on its own.</p><a class="hiw__see" href="#mission-control" data-goto="brain">See it in the AI brain &#8594;</a></div>
+      </li>
+      <li class="hiw__row">
+        <div class="hiw__card"><p>One connected network.</p></div>
+        <svg class="hiw__link" viewBox="0 0 120 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 H120" /><path d="M34 30 Q42 18 52 14" /><path d="M78 30 Q86 42 96 46" /><circle cx="120" cy="30" r="3" /></svg>
+        <div class="hiw__card hiw__card--system"><p>Satellites broadcast their intent to neighbours over &#8220;hyphae&#8221; links: shared data plus a handshake.</p><a class="hiw__see" href="#mission-control" data-goto="handshake">See the handshake &#8594;</a></div>
+      </li>
+      <li class="hiw__row">
+        <div class="hiw__card"><p>A market with sanctions: partners that stop trading back get cut off (Kiers et al. 2011).</p></div>
+        <svg class="hiw__link" viewBox="0 0 120 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 H120" /><path d="M34 30 Q42 18 52 14" /><path d="M78 30 Q86 42 96 46" /><circle cx="120" cy="30" r="3" /></svg>
+        <div class="hiw__card hiw__card--system"><p>A fairness ledger rewards those who give way and penalises free-riders.</p><a class="hiw__see" href="#mission-control" data-goto="ledger">See the ledger &#8594;</a></div>
+      </li>
+      <li class="hiw__row hiw__row--broken">
+        <div class="hiw__card"><p>What nature lacks.</p></div>
+        <svg class="hiw__link" viewBox="0 0 120 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 H44" /><path d="M76 30 H120" /><path d="M52 22 L68 38 M68 22 L52 38" class="hiw__x" /></svg>
+        <div class="hiw__card hiw__card--system"><p>Shared right-of-way rules, human escalation, allocated responsibility, governed learning and obligations to the future.</p><a class="hiw__see" href="#governance">See where the analogy breaks &#8594;</a></div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ========================= GOVERNANCE (F13–16) ================ -->
+<!-- Filled from ../docs/governance.md when it exists (js/governance.js).
+     Everything marked data-placeholder is replaced; nothing else is touched. -->
+<section class="section gov" id="governance" aria-labelledby="gov-title">
+  <div class="wrap stack gap-6">
+
+    <header class="stack gap-3">
+      <span class="eyebrow">Governance</span>
+      <h2 id="gov-title">What the network can't decide on its own</h2>
+      <div class="gov__intro prose" data-gov="intro" data-placeholder>
+        <p class="ph">[Short introduction from governance.md: why rules, responsibility and obligations sit outside the network.]</p>
+      </div>
+    </header>
+
+    <nav class="gov__index" aria-label="Governance sections">
+      <a href="#f13"><span class="mono">01</span><span data-gov-nav="f13">Where the analogy breaks</span></a>
+      <a href="#f14"><span class="mono">02</span><span data-gov-nav="f14">Who is responsible when it goes wrong</span></a>
+      <a href="#f15"><span class="mono">03</span><span data-gov-nav="f15">Governing what the network learns</span></a>
+      <a href="#f16"><span class="mono">04</span><span data-gov-nav="f16">NARETU obligations charter</span></a>
+    </nav>
+
+    <!-- F13 -->
+    <article class="gov__item" id="f13" aria-labelledby="f13-title">
+      <div class="gov__label"><span class="mono">01</span><span class="eyebrow">Analogy</span></div>
+      <div class="gov__main">
+        <h3 id="f13-title">Where the analogy breaks</h3>
+        <div class="gov__body" data-gov="f13" data-placeholder>
+          <div class="hbb">
+            <div class="hbb__col" data-v="holds">
+              <span class="verdict-chip" data-v="holds">holds</span>
+              <p class="ph">[Where the fungal network and orbit genuinely match.]</p>
+              <p class="ph">[Second point.]</p>
+            </div>
+            <div class="hbb__col" data-v="bends">
+              <span class="verdict-chip" data-v="bends">bends</span>
+              <p class="ph">[Where it works only with changes.]</p>
+              <p class="ph">[Second point.]</p>
+            </div>
+            <div class="hbb__col" data-v="breaks">
+              <span class="verdict-chip" data-v="breaks">breaks</span>
+              <p class="ph">[Where the analogy fails, and what we add instead.]</p>
+              <p class="ph">[Second point.]</p>
+            </div>
+          </div>
+          <p class="ph" style="font-size: 12.5px">[Sources: Simard et al. 1997 · Kiers et al. 2011 · Karst et al. 2023]</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- F14 -->
+    <article class="gov__item" id="f14" aria-labelledby="f14-title">
+      <div class="gov__label"><span class="mono">02</span><span class="eyebrow">Responsibility</span></div>
+      <div class="gov__main">
+        <h3 id="f14-title">Who is responsible when it goes wrong</h3>
+        <div class="gov__body" data-gov="f14" data-placeholder>
+          <div class="matrix-scroll">
+            <table class="matrix">
+              <thead><tr><th scope="col">Failure</th><th scope="col">Operator</th><th scope="col">AI developer</th><th scope="col">Data provider</th><th scope="col">Licensing state</th><th scope="col">International body</th></tr></thead>
+              <tbody>
+                <tr><th scope="row" class="ph">[Failure mode]</th><td class="ph">[…]</td><td class="ph">[…]</td><td class="ph">[…]</td><td class="ph">[…]</td><td class="ph">[…]</td></tr>
+                <tr><th scope="row" class="ph">[Failure mode]</th><td class="ph">[…]</td><td class="ph">[…]</td><td class="ph">[…]</td><td class="ph">[…]</td><td class="ph">[…]</td></tr>
+                <tr><th scope="row" class="ph">[Failure mode]</th><td class="ph">[…]</td><td class="ph">[…]</td><td class="ph">[…]</td><td class="ph">[…]</td><td class="ph">[…]</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="ph">[How fault is established: whether the rules were followed, and what the ledger shows.]</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- F15 -->
+    <article class="gov__item" id="f15" aria-labelledby="f15-title">
+      <div class="gov__label"><span class="mono">03</span><span class="eyebrow">Learning</span></div>
+      <div class="gov__main">
+        <h3 id="f15-title">Governing what the network learns</h3>
+        <div class="gov__body" data-gov="f15" data-placeholder>
+          <ol class="flow">
+            <li><span class="mono">1</span><strong>Every case is logged</strong><span class="ph">[detail]</span></li>
+            <li><span class="mono">2</span><strong>A change is proposed</strong><span class="ph">[to the rules or the model]</span></li>
+            <li><span class="mono">3</span><strong>Orbital Incident Board</strong><span class="ph">[independent approval]</span></li>
+            <li><span class="mono">4</span><strong>Versioned release</strong><span class="ph">[every version recorded]</span></li>
+          </ol>
+          <p class="ph">[Who sits on the board, and what it may and may not approve.]</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- F16 -->
+    <article class="gov__item" id="f16" aria-labelledby="f16-title">
+      <div class="gov__label"><span class="mono">04</span><span class="eyebrow">Obligations</span></div>
+      <div class="gov__main">
+        <h3 id="f16-title">NARETU obligations charter</h3>
+        <p class="faint" style="font-size: 13px; margin: 0 0 var(--sp-4)">
+          NARETU is the obligations-based framework developed by Chief Titus Letaapo, drawing on
+          Samburu governance principles. It starts from what is owed, by whom, to whom, and over what time.
+        </p>
+        <div class="gov__body" data-gov="f16" data-placeholder>
+          <div class="matrix-scroll">
+            <table class="matrix">
+              <thead><tr><th scope="col">Who</th><th scope="col">Owes what</th><th scope="col">To whom</th><th scope="col">Over what time</th></tr></thead>
+              <tbody>
+                <tr><th scope="row" class="ph">[Actor]</th><td class="ph">[Obligation]</td><td class="ph">[…]</td><td class="ph">[…]</td></tr>
+                <tr><th scope="row" class="ph">[Actor]</th><td class="ph">[Obligation]</td><td class="ph">[…]</td><td class="ph">[…]</td></tr>
+                <tr><th scope="row" class="ph">[Actor]</th><td class="ph">[Obligation]</td><td class="ph">[…]</td><td class="ph">[…]</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="ph">[The cap on debris legacy left to future generations.]</p>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- =========================== SOURCES ========================== -->
+<footer class="section section--tight" id="sources">
+  <div class="wrap stack gap-3">
+    <h3>Sources and credits</h3>
+    <ul class="prose faint" style="font-size: 13px; line-height: 1.7">
+      <li>Object catalogue: CelesTrak (T.S. Kelso).</li>
+      <li>Conjunction data: ESA Kelvins Collision Avoidance dataset, CC-BY-4.0 (Uriot et al. 2022).</li>
+      <li>globe.gl and satellite.js, MIT. Chart.js, MIT.</li>
+      <li>2019 replay: ESA, "ESA spacecraft dodges large constellation", 3 September 2019; SpaceNews, "ESA spacecraft dodges potential collision with Starlink satellite", 3 September 2019.</li>
+      <li>Kiers, E.T. et al. (2011). Reciprocal rewards stabilize cooperation in the mycorrhizal symbiosis. <em>Science</em> 333.</li>
+      <li>Wang, T. (2010). Analysis of debris from the collision of the Cosmos 2251 and the Iridium 33 satellites. <em>Science &amp; Global Security</em> 18.</li>
+      <li>NARETU framing credited to the challenge brief and to Chief Titus Letaapo.</li>
+      <li>Every collision probability shown on this site is illustrative and uses linearised dynamics.</li>
+    </ul>
+  </div>
+</footer>
+
+<!-- ============================ MODAL =========================== -->
+<dialog class="modal" id="escalation-modal" aria-labelledby="escalation-title">
+  <div class="stack gap-4">
+    <div class="stack gap-2">
+      <span class="row gap-2">
+        <span class="chip" data-type="ESCALATE">ESCALATE</span>
+        <span class="mono dim" style="font-size: 11.5px" id="escalation-meta"></span>
+      </span>
+      <h3 id="escalation-title">A human has to confirm this one</h3>
+    </div>
+    <div class="block stack gap-2">
+      <span class="eyebrow">Trigger</span>
+      <p style="margin: 0" id="escalation-reason"></p>
+    </div>
+    <div class="block stack gap-2">
+      <span class="eyebrow">Agreed plan</span>
+      <p style="margin: 0; font-weight: 600" id="escalation-plan"></p>
+    </div>
+    <p class="faint" style="font-size: 12.5px; margin: 0">
+      <strong style="color: var(--text)">Überlingen rule.</strong> An agreed machine plan beats an ad-hoc override.
+      <span id="override-note"></span>
+    </p>
+    <div class="row gap-3">
+      <button type="button" class="btn grow" data-decision="approve" style="background: var(--ok); color: var(--accent-ink); border-color: var(--ok); min-height: 48px; font-weight: 600">Approve</button>
+      <button type="button" class="btn btn--ghost grow" data-decision="override" style="min-height: 48px">Override</button>
+      <button type="button" class="btn btn--danger grow" data-decision="stop" style="min-height: 48px">Stop</button>
+    </div>
+    <p class="faint mono" style="font-size: 11px; margin: 0">logged: operator id · decision · timestamp · reason</p>
+  </div>
+</dialog>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
