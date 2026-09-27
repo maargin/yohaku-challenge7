@@ -38,10 +38,11 @@ Collision probabilities in this project are **illustrative**: dynamics are linea
 ## Licence
 MIT — see [`LICENSE`](LICENSE).
 
-## Deploy (Cloudflare Pages)
+## Deploy (GitHub Pages)
+Pushing to `main` runs `.github/workflows/pages.yml`, which checks and publishes `web/`.
 ```bash
-npx wrangler login              # once, opens a browser
-npm run deploy                  # runs the predeploy check, then uploads web/ only
-npm run check:headers -- https://<project>.pages.dev/
+npm run check:site                                   # site files only, vendor checksums
+node tools/check_headers.mjs https://<user>.github.io/<repo>/
+bash tools/prepublish_check.sh                       # before making the repository public
 ```
-Security headers come from `web/_headers`. Before making the repository public, run `bash tools/prepublish_check.sh`.
+GitHub Pages cannot send custom HTTP headers, so the CSP and referrer policy are set with `<meta>` tags in `index.html`; `web/_headers` keeps the full header set for hosts that support it.

@@ -64,3 +64,9 @@ test('no fungi wording in the UI', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8').toLowerCase();
   assert.ok(!/fung|mycel|hypha/.test(html));
 });
+
+test('index.html carries CSP and referrer policy as meta tags (GitHub Pages)', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self';/);
+  assert.match(html, /name="referrer" content="strict-origin-when-cross-origin"/);
+});

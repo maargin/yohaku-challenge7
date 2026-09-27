@@ -125,8 +125,14 @@ def train(args):
     actor, critic = Actor().to(device), Critic().to(device)
     opt = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()), lr=args.lr)
     norm = RunningNorm(OBS_DIM, device)
+    if args.init:
+        ck = torch.load(args.init, map_location=device, weights_only=False)
+        actor.load_state_dict(ck["actor"])
+        critic.load_state_dict(ck["critic"])
+        norm.mean, norm.var, norm.count = ck["obs_mean"].to(device), ck["obs_var"].to(device), 1e6
+        log(logger, logging.INFO, "initialised from checkpoint", path=str(args.init))
     agent_oh = torch.eye(A, device=device)
-    stage, stage_steps, total_steps, it = 1, 0, 0, 0
+    stage, stage_steps, total_steps, it = args.start_stage, 0, 0, 0
     budgets = {1: args.s1_steps, 2: args.s2_steps}
     recent = []
     t0 = time.time()
@@ -226,6 +232,8 @@ def main(argv=None):
     ap.add_argument("--reward", choices=["v1", "v2"], default="v1")
     ap.add_argument("--geometry", choices=["synthetic", "kelvins"], default="synthetic")
     ap.add_argument("--low-risk", type=float, default=0.0)
+    ap.add_argument("--init", default=None, help="checkpoint to fine-tune from (final.pt)")
+    ap.add_argument("--start-stage", type=int, choices=[1, 2, 3], default=1)
     train(ap.parse_args(argv))
 
 
