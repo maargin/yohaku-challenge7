@@ -6,7 +6,10 @@ import argparse
 import math
 from pathlib import Path
 
-import torch
+try:
+    import torch
+except ImportError:  # the pure-Python paths (forward_json) do not need it
+    torch = None
 
 from . import contracts
 from .domain import ACTIONS

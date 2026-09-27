@@ -31,6 +31,8 @@ jobs:
         with:
           node-version: "22.22.2"
 
+      - name: Install pinned dependencies (vendor checksum reference)
+        run: npm ci --ignore-scripts
       - name: Pre-deploy checks (site files only, vendor checksums)
         run: node tools/predeploy_check.mjs
 
