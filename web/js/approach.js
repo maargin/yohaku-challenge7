@@ -84,7 +84,7 @@ function draw() {
   // plot area and scales: time along x; separation along y (linear to 50 m, then logarithmic to 2 km)
   const left = 58;
   const right = W - 14;
-  const top = 46;
+  const top = 74;
   const bottom = H - 78;
   const cy = (top + bottom) / 2;
   const halfH = (bottom - top) / 2;
@@ -179,8 +179,10 @@ function draw() {
     ctx.beginPath(); ctx.moveTo(bx, y2); ctx.lineTo(bx - 5, y2 + 8); ctx.lineTo(bx + 5, y2 + 8); ctx.closePath(); ctx.fill();
     ctx.lineWidth = 1;
     ctx.fillStyle = css('--accent-text');
-    ctx.textAlign = 'center';
-    ctx.fillText(`burn ${frames[st.burnIdx].agents[st.mover].dv.toFixed(2)} m/s`, bx, y2 - 8);
+    const burnText = `burn ${frames[st.burnIdx].agents[st.mover].dv.toFixed(2)} m/s`;
+    const nearEdge = bx - ctx.measureText(burnText).width / 2 < left + 4;
+    ctx.textAlign = nearEdge ? 'left' : 'center';
+    ctx.fillText(burnText, nearEdge ? bx + 8 : bx, Math.min(y1, y2) - 8);
     ctx.textAlign = 'left';
   } else {
     pathTo(st.missBefore, T_START, moverColor, 2.5);
@@ -202,13 +204,14 @@ function draw() {
       : `SAFE · miss ${fmtM(missNow)} · Pc ${pcText(frame.pc)}`;
   ctx.font = `bold 13px ${css('--font-mono') || 'monospace'}`;
   const vw = ctx.measureText(verdict).width + 20;
-  const vx = Math.max(left, Math.min(right - vw, (left + right) / 2 - vw / 2));
+  const vx = left;
+  const vy = 36;
   ctx.fillStyle = css('--surface');
-  ctx.fillRect(vx, top + 2, vw, 24);
+  ctx.fillRect(vx, vy, vw, 24);
   ctx.strokeStyle = verdictColor;
-  ctx.strokeRect(vx + 0.5, top + 2.5, vw - 1, 23);
+  ctx.strokeRect(vx + 0.5, vy + 0.5, vw - 1, 23);
   ctx.fillStyle = verdictColor;
-  ctx.fillText(verdict, vx + 10, top + 19);
+  ctx.fillText(verdict, vx + 10, vy + 17);
   ctx.font = mono;
 
   // now: the time marker and the two objects on their paths
@@ -253,7 +256,8 @@ function draw() {
   if (hud) hud.textContent = readout;
   ctx.fillStyle = css('--text-2');
   ctx.textAlign = 'right';
-  ctx.fillText(readout, right, H - 44);
+  const readoutFits = right - (left + vw + 24) > ctx.measureText(readout).width;
+  ctx.fillText(readout, right, readoutFits ? 53 : H - 44);
   ctx.textAlign = 'left';
   if (announcer && lastAnnounced !== frame.index) {
     lastAnnounced = frame.index;

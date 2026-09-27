@@ -310,3 +310,6 @@ footer { padding: 28px 64px; color: var(--text-4); font-size: 13px; }
 .approach-wrap .hud { display: none; }
 .approach-legend { bottom: 24px; padding: 3px 8px; font-size: 11px; gap: 4px 12px; }
 .approach-legend { bottom: 4px; }
+.stage { grid-template-columns: 2fr 3fr; height: min(82vh, 780px); min-height: 540px; }
+@media (max-width: 1100px) { .stage > * { height: 500px; } }
+@media (max-width: 700px) { .stage > * { height: 420px; } }
