@@ -1,6 +1,7 @@
 # Video assets
 
 - `the-system-silent.mp4` (not committed; 1920×1080, 30 fps, no audio, 1:52): the screen recording of the site following the storyboard, starting with the two title cards. The presenter adds a 10-second introduction in front and records the voice-over.
+- `the-system-captioned.mp4` (not committed; same recording with explanatory captions burned in, one per beat, no audio): the version to use when there is no voice-over.
 - `b*.jpg`: the storyboard screenshots.
 
 ## Beat times in the silent video (seconds from its start)
