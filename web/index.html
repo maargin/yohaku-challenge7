@@ -71,13 +71,13 @@
       <canvas id="approach" role="img" aria-labelledby="approach-caption"></canvas>
       <div class="hud" id="approach-hud">Waiting for an encounter</div>
       <div class="legend approach-legend" aria-label="Approach view legend">
-        <span><i class="lg-dot"></i>object that holds course (centre)</span>
-        <span><i class="lg-dot lg-move"></i>object that moves, sliding in along the dashed track</span>
-        <span><i class="lg-disc"></i>uncertainty σ</span>
-        <span><i class="lg-hard"></i>20 m hard body</span>
-        <span><i class="lg-ring"></i>distance rings</span>
+        <span><i class="lg-line"></i>path of the object that holds course</span>
+        <span><i class="lg-line lg-move"></i>path of the object that moves (dashed: its old path)</span>
+        <span><i class="lg-disc"></i>uncertainty funnel</span>
+        <span><i class="lg-band"></i>±20 m collision band</span>
+        <span><i class="lg-arrow"></i>burn</span>
       </div>
-      <div class="credit" id="approach-caption">Predicted geometry at closest approach · illustrative</div>
+      <div class="credit" id="approach-caption">Paths over time up to closest approach · schematic, distances real · illustrative</div>
     </div>
     <div class="sr-only" id="stage-announcer" aria-live="polite"></div>
     <div class="sr-only" id="announcer" aria-live="polite"></div>

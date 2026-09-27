@@ -302,3 +302,8 @@ footer { padding: 28px 64px; color: var(--text-4); font-size: 13px; }
 .approach-legend { left: 12px; right: 12px; bottom: 10px; max-width: none; gap: 6px 14px; padding: 4px 10px; font-size: 11px; line-height: 1.3; background: color-mix(in srgb, var(--surface) 85%, transparent); }
 .approach-legend i { width: 8px; height: 8px; margin-right: 5px; }
 .approach-wrap .credit { bottom: 34px; right: 12px; font-size: 11px; }
+.hud { top: auto; bottom: 46px; left: 12px; }
+.approach-legend .lg-line { width: 14px; height: 3px; border-radius: 2px; background: var(--cls-crewed); }
+.approach-legend .lg-line.lg-move { background: var(--cls-autonomous); }
+.approach-legend .lg-band { width: 14px; height: 8px; border-radius: 2px; background: color-mix(in srgb, var(--warn) 30%, transparent); border: 1px dashed var(--warn); }
+.approach-legend .lg-arrow { width: 3px; height: 12px; border-radius: 1px; background: var(--accent); }
