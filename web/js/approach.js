@@ -85,7 +85,7 @@ function draw() {
   const left = 58;
   const right = W - 14;
   const top = 46;
-  const bottom = H - 62;
+  const bottom = H - 78;
   const cy = (top + bottom) / 2;
   const halfH = (bottom - top) / 2;
   const x = (t) => left + ((t - T_START) / (T_END - T_START)) * (right - left);
@@ -134,7 +134,7 @@ function draw() {
   ctx.beginPath(); ctx.moveTo(left, bandTop); ctx.lineTo(right, bandTop); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = css('--warn');
-  ctx.fillText(`±${RADIUS_M} m collision band`, left + 6, bandTop - 5);
+  ctx.fillText(`±${RADIUS_M} m collision band`, left + 6, cy + 13);
 
   // the object that holds course: a straight path at zero separation
   ctx.strokeStyle = css(`--cls-${standOn.cls}`);
@@ -226,7 +226,7 @@ function draw() {
   ctx.textAlign = labelLeft ? 'right' : 'left';
   const lx = labelLeft ? tx - 10 : tx + 10;
   ctx.fillStyle = css('--text');
-  ctx.fillText(`${standOn.name} · holds course`, lx, cy + 18);
+  ctx.fillText(`${standOn.name} · holds course`, lx, cy + 30);
   const high = y(sepNow) < top + 44;
   ctx.fillText(`${mover.name}${st.burned ? ' · moved' : frame.yielder === null ? '' : ' · must move'}`, lx, high ? y(sepNow) + 18 : y(sepNow) - 10);
   ctx.fillStyle = css('--text-3');
@@ -253,7 +253,7 @@ function draw() {
   if (hud) hud.textContent = readout;
   ctx.fillStyle = css('--text-2');
   ctx.textAlign = 'right';
-  ctx.fillText(readout, right, H - 8);
+  ctx.fillText(readout, right, H - 44);
   ctx.textAlign = 'left';
   if (announcer && lastAnnounced !== frame.index) {
     lastAnnounced = frame.index;

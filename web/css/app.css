@@ -309,3 +309,4 @@ footer { padding: 28px 64px; color: var(--text-4); font-size: 13px; }
 .approach-legend .lg-arrow { width: 3px; height: 12px; border-radius: 1px; background: var(--accent); }
 .approach-wrap .hud { display: none; }
 .approach-legend { bottom: 24px; padding: 3px 8px; font-size: 11px; gap: 4px 12px; }
+.approach-legend { bottom: 4px; }
