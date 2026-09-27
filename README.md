@@ -46,3 +46,19 @@ node tools/check_headers.mjs https://<user>.github.io/<repo>/
 bash tools/prepublish_check.sh                       # before making the repository public
 ```
 GitHub Pages cannot send custom HTTP headers, so the CSP and referrer policy are set with `<meta>` tags in `index.html`; `web/_headers` keeps the full header set for hosts that support it.
+
+## Live server (optional)
+
+The site is static, but a small server can make it live: the simulator decides every scenario and live-mode
+encounter on request, and a local open-weight language model writes the explanations. Nothing changes in the
+page; it uses the endpoints when they exist and the pre-built data files otherwise.
+
+```bash
+# a chat-completions endpoint for the explanations (e.g. vLLM on 127.0.0.1:8011), then:
+python -m sim.live_server --web web --bind 127.0.0.1 --port 8080 \
+  --endpoint http://127.0.0.1:8011/v1 --model <model-name> --policy runs/<training-run>
+```
+
+Endpoints (same origin, JSON): `GET /api/health`, `GET /api/episodes`, `POST /api/run`, `POST /api/explain`,
+`POST /api/explain-step`. Every field is range-checked, bodies are capped at 16 KB and never logged, and a
+failed model call falls back to a template. Bind to a private interface only.

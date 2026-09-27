@@ -55,10 +55,10 @@ async function probeLive() {
 async function start() {
   guard('theme', theme.init)();
   tabs();
-  const live = (await probeLive()) ?? { explain: false, run: false, episodes: false };
-  store.set('live', live);
-  const { failed } = await loadAll(store, live.episodes ? { urls: { episodes: 'api/episodes' } } : {});
-  if (live.episodes && !failed.episodes) {
+  const liveCfg = (await probeLive()) ?? { explain: false, run: false, episodes: false };
+  store.set('live', liveCfg);
+  const { failed } = await loadAll(store, liveCfg.episodes ? { urls: { episodes: 'api/episodes' } } : {});
+  if (liveCfg.episodes && !failed.episodes) {
     $('.mc-bar .spacer').before(h('span', { class: 'badge ok', 'data-testid': 'live-badge',
       text: `Live: scenarios decided by the simulator at ${new Date().toLocaleTimeString('en-GB')}` }));
   }
