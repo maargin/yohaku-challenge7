@@ -59,6 +59,6 @@ python -m sim.live_server --web web --bind 127.0.0.1 --port 8080 \
   --endpoint http://127.0.0.1:8011/v1 --model <model-name> --policy runs/<training-run>
 ```
 
-Endpoints (same origin, JSON): `GET /api/health`, `GET /api/episodes`, `POST /api/run`, `POST /api/explain`,
-`POST /api/explain-step`. Every field is range-checked, bodies are capped at 16 KB and never logged, and a
+Endpoints (same origin, JSON): `GET /api/health`, `GET /api/episodes`, `POST /api/episode` (a scenario for two
+catalogue objects, played on the globe), `POST /api/run`, `POST /api/explain`, `POST /api/explain-step`. Every field is range-checked, bodies are capped at 16 KB and never logged, and a
 failed model call falls back to a template. Bind to a private interface only.
