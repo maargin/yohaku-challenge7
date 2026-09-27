@@ -106,12 +106,13 @@ function draw() {
   // axes
   ctx.fillStyle = css('--text-4');
   ctx.textAlign = 'right';
+  let lastTick = 1e9;
   for (const m of [0, 100, 500, 1000, 2000]) {
     ctx.strokeStyle = css('--line');
     ctx.setLineDash([2, 6]);
     ctx.beginPath(); ctx.moveTo(left, y(m)); ctx.lineTo(right, y(m)); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillText(m === 0 ? '0' : fmtM(m), left - 8, y(m) + 4);
+    if (lastTick - y(m) > 14) { ctx.fillText(m === 0 ? '0' : fmtM(m), left - 8, y(m) + 4); lastTick = y(m); }
   }
   ctx.textAlign = 'center';
   ctx.strokeStyle = css('--line-3');
@@ -120,7 +121,7 @@ function draw() {
     ctx.beginPath(); ctx.moveTo(x(t), bottom); ctx.lineTo(x(t), bottom + 5); ctx.stroke();
   }
   ctx.textAlign = 'left';
-  ctx.fillText('separation from the object that holds course', left + 6, top - 8);
+  if (H >= 380) ctx.fillText('separation from the object that holds course', left + 6, top - 8);
 
   // the collision band around the object that holds course
   const bandTop = y(RADIUS_M);
@@ -133,7 +134,7 @@ function draw() {
   ctx.beginPath(); ctx.moveTo(left, bandTop); ctx.lineTo(right, bandTop); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = css('--warn');
-  ctx.fillText(`±${RADIUS_M} m: collision band`, right - 156, bandTop - 6);
+  ctx.fillText(`±${RADIUS_M} m collision band`, left + 6, bandTop - 5);
 
   // the object that holds course: a straight path at zero separation
   ctx.strokeStyle = css(`--cls-${standOn.cls}`);
@@ -201,7 +202,7 @@ function draw() {
       : `SAFE · miss ${fmtM(missNow)} · Pc ${pcText(frame.pc)}`;
   ctx.font = `bold 13px ${css('--font-mono') || 'monospace'}`;
   const vw = ctx.measureText(verdict).width + 20;
-  const vx = Math.max(left, Math.min(right - vw, xt - vw / 2));
+  const vx = Math.max(left, Math.min(right - vw, (left + right) / 2 - vw / 2));
   ctx.fillStyle = css('--surface');
   ctx.fillRect(vx, top + 2, vw, 24);
   ctx.strokeStyle = verdictColor;
@@ -226,9 +227,10 @@ function draw() {
   const lx = labelLeft ? tx - 10 : tx + 10;
   ctx.fillStyle = css('--text');
   ctx.fillText(`${standOn.name} · holds course`, lx, cy + 18);
-  ctx.fillText(`${mover.name}${st.burned ? ' · moved' : frame.yielder === null ? '' : ' · must move'}`, lx, y(sepNow) - 10);
+  const high = y(sepNow) < top + 44;
+  ctx.fillText(`${mover.name}${st.burned ? ' · moved' : frame.yielder === null ? '' : ' · must move'}`, lx, high ? y(sepNow) + 18 : y(sepNow) - 10);
   ctx.fillStyle = css('--text-3');
-  ctx.fillText(`uncertainty σ ${fmtM(frame.sigma)}`, lx, y(sepNow) + 18);
+  ctx.fillText(`uncertainty σ ${fmtM(frame.sigma)}`, lx, high ? y(sepNow) + 32 : y(sepNow) + 18);
   ctx.textAlign = 'left';
 
   // the thinking steps, with the current one lit
