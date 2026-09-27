@@ -1,5 +1,7 @@
 # 2-minute video script
 
+A storyboard with a screenshot of every beat (what to show, what to click, what to point at, what to say) is in **docs/video-storyboard.pdf**; the screenshots are in docs/video/.
+
 Target length **1:58**. About 300 words of voice-over at a steady pace (150 words a minute). Record the screen at 1440×900 or larger in dark mode, speed "Normal". Words to say are in quotes; what to show is in italics.
 
 Record against the team's live server address so the "pick two real objects" shot works; the public site works for everything else.
