@@ -5,7 +5,7 @@ import { h, clear, $ } from './dom.js';
 import { createEncounter, HOLD } from './liveEnv.js';
 import { ACTION_LABELS, pcText, tMinus } from './format.js';
 
-const PRESETS = {
+export const PRESETS = {
   'aeolus-2019': { title: '2019: Aeolus and Starlink 44', m0_m: 80, p0_m: 0, sigma0_m: 1500, sigma_min_m: 120,
     agents: [{ name: 'Aeolus', capability: 'manoeuvrable', purpose: 'public_good', fuel: 0.5, ledger: 0, silent: false },
       { name: 'Starlink 44', capability: 'autonomous', purpose: 'commercial', fuel: 0.8, ledger: 0, silent: false }] },
@@ -21,9 +21,9 @@ const PRESETS = {
   'silent': { title: 'One satellite never answers', m0_m: 70, p0_m: 0, sigma0_m: 1200, sigma_min_m: 100,
     agents: [{ name: 'Sat D', capability: 'manoeuvrable', purpose: 'commercial', fuel: 0.7, ledger: 0, silent: false },
       { name: 'Sat E', capability: 'manoeuvrable', purpose: 'commercial', fuel: 0.7, ledger: 0, silent: true }] },
-  'safe-pass': { title: 'A safe pass (should not burn)', m0_m: 900, p0_m: 60, sigma0_m: 1200, sigma_min_m: 100,
-    agents: [{ name: 'Sat F', capability: 'manoeuvrable', purpose: 'commercial', fuel: 0.7, ledger: 0, silent: false },
-      { name: 'Sat G', capability: 'autonomous', purpose: 'commercial', fuel: 0.7, ledger: 0, silent: false }] },
+  'free-rider': { title: 'A free-rider (ledger −4) meets a fair operator', m0_m: 70, p0_m: 0, sigma0_m: 1200, sigma_min_m: 100,
+    agents: [{ name: 'Sat F', capability: 'manoeuvrable', purpose: 'commercial', fuel: 0.7, ledger: -4, silent: false },
+      { name: 'Sat G', capability: 'manoeuvrable', purpose: 'commercial', fuel: 0.7, ledger: 1, silent: false }] },
 };
 
 const CAP_OPTIONS = [['manoeuvrable', 'Manoeuvrable'], ['autonomous', 'Autonomous'], ['crewed', 'Crewed'], ['debris', 'Debris']];
@@ -56,15 +56,18 @@ function agentForm(k, a) {
 function readForm(root) {
   const v = (id) => $(`#${id}`, root).value;
   const num = (id, lo, hi) => Math.min(hi, Math.max(lo, Number(v(id)) || 0));
-  return {
+  const spec = {
     agents: [0, 1].map((k) => ({
       name: (v(`live-${k}-name`) || `Satellite ${k + 1}`).slice(0, 24),
       capability: v(`live-${k}-cap`), purpose: v(`live-${k}-pur`),
       fuel: num(`live-${k}-fuel`, 0, 1), ledger: num(`live-${k}-led`, -5, 5), silent: $(`#live-${k}-silent`, root).checked,
     })),
     m0_m: num('live-miss', -3000, 3000), p0_m: num('live-offset', 0, 500),
-    sigma0_m: Math.max(100, num('live-sigma0', 100, 5000)), sigma_min_m: Math.max(30, num('live-sigmamin', 30, 5000)),
+    sigma0_m: Math.max(100, num('live-sigma0', 100, 5000)),
   };
+  // uncertainty never grows towards closest approach (same clamp as the training environment)
+  spec.sigma_min_m = Math.min(spec.sigma0_m, Math.max(30, num('live-sigmamin', 30, 5000)));
+  return spec;
 }
 
 function fillForm(root, spec) {

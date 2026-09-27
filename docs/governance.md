@@ -47,6 +47,6 @@ This section follows the NARETU framing from the challenge brief, credited to Ch
 |---|---|
 | Declaring a higher-priority class (for example, claiming to be crewed) to avoid moving | The registry wins over the declaration; the false declaration costs −2 credits and is recorded as evidence |
 | Staying silent to force the other side to move | A silent party is treated as unable to move, pays −1 credit, and carries presumptive responsibility |
-| Letting others always yield (free-riding) | A balance of −3 or less makes that party the yielder (rule R5) |
+| Letting others always yield (free-riding) | A balance of −3 or less makes that party the yielder (free-rider check) |
 | An AI learning to avoid human review | Hard triggers sit outside the policy and are never penalised in training |
 | A late unilateral change after both sides committed | Refused; any change must go back through a new handshake round |

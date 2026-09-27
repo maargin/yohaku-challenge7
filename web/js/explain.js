@@ -17,7 +17,7 @@ function template(ep, steps, i) {
   const v = latestVerdict(steps, i);
   if (!v) return 'No close approach has been detected yet.';
   const y = ep.agents.find((a) => a.id === v.yielder);
-  return y ? `${y.name} moves under rule ${v.rule}: ${v.reason}.` : `Neither object can move (rule ${v.rule}); operators and the regulator are notified.`;
+  return y ? `${y.name} moves: ${v.reason}.` : `Neither object can move (${v.reason}); operators and the regulator are notified.`;
 }
 
 function render() {
