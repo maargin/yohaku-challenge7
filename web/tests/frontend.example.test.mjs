@@ -40,10 +40,15 @@ test('store emits change events only on change', () => {
   assert.equal(n, 1);
 });
 
-test('no inline scripts or inline event handlers in index.html (CSP)', () => {
-  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.ok(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(html), 'inline <script> found');
-  assert.ok(!/\son[a-z]+\s*=/i.test(html), 'inline on* handler found');
+const pages = () => readdirSync(new URL('../', import.meta.url)).filter((f) => f.endsWith('.html'))
+  .map((f) => [f, readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')]);
+
+test('no inline scripts or inline event handlers in any page (CSP)', () => {
+  assert.ok(pages().length >= 2, 'both pages present');
+  for (const [name, html] of pages()) {
+    assert.ok(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(html), `inline <script> found in ${name}`);
+    assert.ok(!/\son[a-z]+\s*=/i.test(html), `inline on* handler found in ${name}`);
+  }
 });
 
 test('no innerHTML, eval or new Function in app code', () => {
@@ -62,15 +67,15 @@ test('security headers file sets every required header', () => {
   }
 });
 
-test('no fungi wording in the UI', () => {
-  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8').toLowerCase();
-  assert.ok(!/fung|mycel|hypha/.test(html));
+test('no fungi or banned wording in any page', () => {
+  for (const [name, html] of pages()) assert.ok(!/fung|mycel|hypha|\brules\b|who-yields/i.test(html), name);
 });
 
-test('index.html carries CSP and referrer policy as meta tags (GitHub Pages)', () => {
-  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self';/);
-  assert.match(html, /name="referrer" content="strict-origin-when-cross-origin"/);
+test('every page carries CSP and referrer policy as meta tags (GitHub Pages)', () => {
+  for (const [, html] of pages()) {
+    assert.match(html, /http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self';/);
+    assert.match(html, /name="referrer" content="strict-origin-when-cross-origin"/);
+  }
 });
 
 test('every app module parses (node --check)', () => {

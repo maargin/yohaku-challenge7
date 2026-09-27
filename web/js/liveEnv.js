@@ -19,7 +19,7 @@ const MANOEUVRE_PC = 1e-4;
 const DILUTION_PC = 1e-3;
 const PC_HIGH = 1e-3;
 export const HOLD = 0, SMALL_OPEN = 1, LARGE_OPEN = 2, SMALL_CLOSE = 3, RADIAL = 4, REQUEST_YIELD = 5, ESCALATE = 6;
-const DV = [0, 0.02, 0.1, 0.02, 0.05, 0, 0];
+export const DV = [0, 0.02, 0.1, 0.02, 0.05, 0, 0];
 const isBurn = (a) => a >= SMALL_OPEN && a <= RADIAL;
 
 export function pc(miss, sigma) {

@@ -106,7 +106,7 @@ function validRun(j) {
 }
 
 // Ask the simulator on the server to run the encounter; null when it is absent, slow or answers badly.
-async function runOnServer(spec) {
+export async function runOnServer(spec) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20000);
   try {
