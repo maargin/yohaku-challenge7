@@ -6,7 +6,7 @@ const AI = 'Shared onboard AI (with safety layer)';
 const CAPTIONS = {
   'img/plots/learning_curves.png': 'Training curves (mean of 3 seeds).',
   'img/plots/baselines.png': 'Collisions per strategy on 10,000 held-out scenarios.',
-  'img/plots/burn_timing.png': 'When satellites burn: the shared AI burns at the first warning or holds until the safety layer's T−60 min deadline; "both burn" acts at once.',
+  'img/plots/burn_timing.png': "When satellites burn: the shared AI burns at the first warning or holds until the safety layer's T−60 min deadline; 'both burn' acts at once.",
   'img/plots/yield_vs_ledger.png': 'Chance of burning versus ledger balance difference.',
 };
 

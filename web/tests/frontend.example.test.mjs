@@ -2,6 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { loadOne } from '../js/data.js';
 import { oneIn, pcText, signed, tMinus } from '../js/format.js';
 import { createStore } from '../js/state.js';
@@ -69,4 +71,12 @@ test('index.html carries CSP and referrer policy as meta tags (GitHub Pages)', (
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self';/);
   assert.match(html, /name="referrer" content="strict-origin-when-cross-origin"/);
+});
+
+test('every app module parses (node --check)', () => {
+  const dir = new URL('../js/', import.meta.url);
+  for (const f of readdirSync(dir)) {
+    const r = spawnSync(process.execPath, ['--check', fileURLToPath(new URL(f, dir))], { encoding: 'utf8' });
+    assert.equal(r.status, 0, `${f}: ${r.stderr}`);
+  }
 });
