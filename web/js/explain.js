@@ -56,7 +56,9 @@ function render() {
   const steps = currentSteps();
   const i = Math.min(store.get('stepIndex'), steps.length - 1);
   const ex = store.get('data').explanations;
-  const branched = store.get('branch') && i > store.get('branch').index;
+  // the approve branch is the main line, so its steps can still be explained; other branches are not pre-written
+  const branch = store.get('branch');
+  const branched = Boolean(branch) && branch.choice !== 'approve' && i > branch.index;
   const idx = branched ? null : latestInteresting(steps, i);
   const key = idx === null ? null : `${ep.id}.${ep.variant}:${idx}`;
   const found = key !== null && ex && ex[key] ? { key, index: idx } : (branched ? null : latestKey(ex, ep.id, ep.variant, i));
