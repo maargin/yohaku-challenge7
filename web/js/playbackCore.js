@@ -9,7 +9,7 @@ export function episodeIds(episodes) {
 
 export function findEpisode(episodes, id, variant) {
   return episodes.find((e) => e.id === id && e.variant === variant)
-    ?? episodes.find((e) => e.id === id && e.variant === 'rules')
+    ?? episodes.find((e) => e.id === id && e.variant === 'ai')
     ?? episodes.find((e) => e.id === id) ?? null;
 }
 

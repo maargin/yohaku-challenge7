@@ -2,10 +2,10 @@
 import { store } from './state.js';
 import { h, clear, $ } from './dom.js';
 
-const AI = 'Shared AI + rules shield';
+const AI = 'Shared onboard AI (with safety layer)';
 const CAPTIONS = {
   'img/plots/learning_curves.png': 'Training curves (mean of 3 seeds).',
-  'img/plots/baselines.png': 'Collisions per strategy on 1,000 held-out scenarios.',
+  'img/plots/baselines.png': 'Collisions per strategy on 10,000 held-out scenarios.',
   'img/plots/burn_timing.png': 'When satellites burn: the shared AI waits for better tracking data, then burns once.',
   'img/plots/yield_vs_ledger.png': 'Chance of burning versus ledger balance difference.',
 };
@@ -35,39 +35,30 @@ export function init() {
   const tbody = $('#results-table tbody');
   if (!r) { summary.textContent = 'Results are not available right now.'; return; }
   const ai = r.strategies.find((s) => s.name === AI);
-  const rules = r.strategies.find((s) => s.name.startsWith('Rules'));
-  if (ai && rules) {
-    const cls = r.classification || {};
-    const sig = r.significance;
-    const ca = cls[AI];
-    const cr = cls[rules.name];
-    const n = r.setup ? r.setup.scenarios.toLocaleString('en-GB') : 'the held-out';
-    let text;
-    if (ca && cr && sig) {
-      const fewer = cr.avoidable_collisions > 0 ? Math.round((1 - ca.avoidable_collisions / cr.avoidable_collisions) * 100) : 0;
-      const sigText = sig.p_value < 0.05 ? `statistically significant (p = ${sig.p_value})` : `not statistically significant at this sample size (p = ${sig.p_value})`;
-      text = `On ${n} new scenarios, the shared AI behind the rules shield ended ${ca.accuracy_pct}% of them safely, against ${cr.accuracy_pct}% for the rules alone. `
-        + `Avoidable collisions: ${ca.avoidable_collisions} vs ${cr.avoidable_collisions} (${fewer}% fewer; ${sigText}). Fuel per event: ${ai.dv_mean_ms} vs ${rules.dv_mean_ms} m/s.`;
-    } else {
-      text = `The shared AI had ${ai.collisions_pct}% collisions against ${rules.collisions_pct}% for the rules alone, at ${ai.dv_mean_ms} vs ${rules.dv_mean_ms} m/s per event.`;
-    }
-    summary.textContent = text;
-    summary.append(' ', h('span', { class: 'gate', 'data-testid': 'gate-badge', text: r.gate === 'ship' ? 'Gate passed: AI ships behind the shield' : 'Gate: rules-only' }));
-    if (ca && cr) {
-      const pct = (x, ci) => `${x}%${ci && ci[0] !== null ? ` (${ci[0]}–${ci[1]})` : ''}`;
-      const table = h('table', { class: 'results', 'data-testid': 'metrics-table', style: { marginTop: '18px' } },
-        h('thead', {}, h('tr', {}, ...['Metric (95% CI)', AI, rules.name].map((t) => h('th', { scope: 'col', text: t })))),
-        h('tbody', {},
-          ...[
-            ['Accuracy — scenarios ending safely', pct(ca.accuracy_pct, ca.accuracy_ci95), pct(cr.accuracy_pct, cr.accuracy_ci95)],
-            ['Recall — would-collide scenarios resolved', pct(ca.recall_pct, ca.recall_ci95), pct(cr.recall_pct, cr.recall_ci95)],
-            ['Precision — burns in would-collide scenarios', pct(ca.precision_pct, ca.precision_ci95), pct(cr.precision_pct, cr.precision_ci95)],
-            ['False-alarm rate — burns in safe scenarios', `${ca.false_alarm_pct}%`, `${cr.false_alarm_pct}%`],
-            ['Collisions (avoidable / unavoidable)', `${ca.avoidable_collisions} / ${ca.unavoidable_collisions}`, `${cr.avoidable_collisions} / ${cr.unavoidable_collisions}`],
-          ].map((row) => h('tr', {}, ...row.map((c, k) => h('td', { text: c, style: k === 0 ? { fontFamily: 'var(--font-body)' } : {} }))))));
-      summary.after(table);
-      table.after(h('p', { class: 'small muted', text: 'Unavoidable collisions are between two objects that cannot move (debris, silent or out of fuel). Low precision is expected: under uncertainty operators must act on every risky pass, and only some would really have collided.' }));
-    }
+  const none = r.strategies.find((s) => s.name === 'Do nothing');
+  const both = r.strategies.find((s) => s.name.startsWith('Both burn'));
+  const cls = r.classification || {};
+  const ca = cls[AI];
+  const n = r.setup ? r.setup.scenarios.toLocaleString('en-GB') : 'the held-out';
+  if (ai && ca) {
+    summary.textContent = `On ${n} new scenarios built from real ESA uncertainty data, the shared onboard AI ended ${ca.accuracy_pct}% of them safely `
+      + `(95% CI ${ca.accuracy_ci95[0]}–${ca.accuracy_ci95[1]}%)${none ? `, against ${(100 - none.collisions_pct).toFixed(2)}% if nobody acts` : ''}. `
+      + `It resolved ${ca.recall_pct}% of the encounters that would otherwise collide, using ${ai.dv_mean_ms} m/s of fuel per event.`
+      + (both ? ` Having both satellites burn every time is safer still (${(100 - both.collisions_pct).toFixed(2)}%) but uses ${Math.round((both.dv_mean_ms / ai.dv_mean_ms - 1) * 100)}% more fuel and needs no coordination.` : '');
+    const pct = (x, ci) => `${x}%${ci && ci[0] !== null ? ` (${ci[0]}–${ci[1]})` : ''}`;
+    const table = h('table', { class: 'results', 'data-testid': 'metrics-table', style: { marginTop: '18px' } },
+      h('thead', {}, h('tr', {}, ...['Metric (95% CI)', AI].map((t) => h('th', { scope: 'col', text: t })))),
+      h('tbody', {},
+        ...[
+          ['Accuracy — scenarios ending safely', pct(ca.accuracy_pct, ca.accuracy_ci95)],
+          ['Recall — would-collide scenarios resolved', pct(ca.recall_pct, ca.recall_ci95)],
+          ['Precision — burns in would-collide scenarios', pct(ca.precision_pct, ca.precision_ci95)],
+          ['Collisions (avoidable / unavoidable)', `${ca.avoidable_collisions} / ${ca.unavoidable_collisions}`],
+        ].map((row) => h('tr', {}, ...row.map((c, k) => h('td', { text: c, style: k === 0 ? { fontFamily: 'var(--font-body)' } : {} }))))));
+    summary.after(table);
+    table.after(h('p', { class: 'small muted', text: 'Unavoidable collisions are between two objects that cannot move (debris, silent or out of fuel). Precision is low by nature: under tracking uncertainty every risky pass needs a manoeuvre, and only some would really have collided.' }));
+  } else if (ai) {
+    summary.textContent = `The shared onboard AI had ${ai.collisions_pct}% collisions at ${ai.dv_mean_ms} m/s per event.`;
   }
   clear(tbody);
   for (const s of r.strategies) {

@@ -14,6 +14,7 @@ import * as brain from './brain.js';
 import * as explain from './explain.js';
 import * as replay from './replay.js';
 import * as results from './results.js';
+import * as live from './live.js';
 import * as globe from './globe.js';
 
 install();
@@ -57,6 +58,7 @@ async function start() {
   guard('explain', explain.init)();
   guard('replay', replay.init)();
   guard('results', results.init)();
+  guard('live', live.init)();
   const startGlobe = guard('globe', globe.init);
   if (typeof window.Globe === 'function') startGlobe();
   else window.addEventListener('load', startGlobe, { once: true });

@@ -31,7 +31,7 @@ function render() {
     ...ep.agents.map((a) => h('button', { class: 'btn', 'aria-pressed': String(a.id === agent.id), 'data-testid': `brain-agent-${a.id}`,
       onClick: () => { selected = a.id; render(); }, text: a.name })));
   panel.append(
-    h('div', { class: 'panel-title', text: ep.variant === 'ai' ? 'AI Brain · shared policy' : 'AI Brain · rules-only mode (AI not used)' }),
+    h('div', { class: 'panel-title', text: 'AI Brain · shared policy' }),
     picker,
     h('div', { class: 'verdict-title', style: { fontSize: '19px' }, text: `What ${agent.name} sees` }),
     row('Time to closest', tMinus(s.t_min), (-s.t_min / 240) * 100),
@@ -40,15 +40,15 @@ function render() {
     row('Collision prob.', pcText(s.pc), ((Math.log10(Math.max(s.pc, 1e-10)) + 10) / 10) * 100, 'var(--warn)'),
     row('Own fuel', `${Math.round(agent.fuel * 100)}%`, agent.fuel * 100, 'var(--ok)'),
     h('div', { class: 'bar-row' }, h('span', { class: 'muted', text: 'Threat' }), h('span', { text: `${other.name} (${other.class})` }), h('span', {})),
-    h('div', { class: 'bar-row' }, h('span', { class: 'muted', text: 'Rules role' }), h('span', { text: v ? (v.yielder === agent.id ? 'yielder' : 'stand-on') : 'pending' }), h('span', {})),
+    h('div', { class: 'bar-row' }, h('span', { class: 'muted', text: 'Priority' }), h('span', { text: v ? (v.yielder === agent.id ? 'yielder' : 'stand-on') : 'pending' }), h('span', {})),
     h('div', { class: 'panel-title', style: { marginTop: '8px' }, text: 'Action probabilities' }),
   );
   const probs = s.actions[agent.id]?.probs ?? [];
   const best = probs.indexOf(Math.max(...probs));
   probs.forEach((p, k) => panel.append(row(ACTION_LABELS[k], p.toFixed(2), p * 100, k === best ? 'var(--accent)' : 'var(--line-3)')));
   panel.append(h('div', { class: 'card' },
-    h('span', { class: 'small muted', text: 'Safety shield' }),
-    h('span', { class: 'small', text: 'Every proposal passes through the Who-Yields rules and the hard escalation triggers before it is executed. If the AI disagrees with the rules, the rules win and the case is escalated.' })));
+    h('span', { class: 'small muted', text: 'Safety layer' }),
+    h('span', { class: 'small', text: 'Every proposal passes through the safety layer before it is executed: a fixed priority check (debris never moves, crewed holds, low fuel is protected) and the hard escalation triggers. If the AI proposes something the safety layer forbids, the safe action is executed and the conflict is logged.' })));
   if (parityResult !== null) {
     const ok = parityResult < 1e-4;
     panel.append(h('span', { class: `badge ${ok ? 'ok' : 'warn'}`, 'data-testid': 'policy-parity-badge',

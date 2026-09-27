@@ -23,7 +23,7 @@ function open({ index, step }) {
     : `${step.escalation.reason.charAt(0).toUpperCase()}${step.escalation.reason.slice(1)}. The plan needs your approval.`;
   $('#decision-plan').textContent = describe(ep, step);
   $('#decision-risk').textContent = `Pc ${pcText(step.pc)} (${oneIn(step.pc)})`;
-  $('#decision-text').textContent = 'The rules decided who moves. Neither side has committed yet, so you can still override. Once both send EXECUTED, any change must go back through the handshake.';
+  $('#decision-text').textContent = 'The safety layer decided who moves. Neither side has committed yet, so you can still override. Once both send EXECUTED, any change must go back through the handshake.';
   const dlg = $('#decision');
   if (!dlg.open) dlg.showModal();
   $('[data-choice="approve"]').focus();

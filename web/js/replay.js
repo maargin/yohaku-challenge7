@@ -1,4 +1,4 @@
-// 2019 Aeolus replay: email world (scripted variant notes) vs the System's world (rules variant events).
+// 2019 Aeolus replay: email world (scripted variant notes) vs the System's world (AI variant events).
 import { store } from './state.js';
 import { h, clear, $, $$ } from './dom.js';
 import { tMinus } from './format.js';
@@ -47,7 +47,7 @@ function play() {
 export function init() {
   const eps = store.get('data').episodes ?? [];
   const email = eps.find((e) => e.id === 'aeolus-2019' && e.variant === 'scripted');
-  const sys = eps.find((e) => e.id === 'aeolus-2019' && e.variant === 'rules');
+  const sys = eps.find((e) => e.id === 'aeolus-2019' && e.variant === 'ai') ?? eps.find((e) => e.id === 'aeolus-2019' && e.variant === 'rules');
   const le = $('#replay-email');
   const ls = $('#replay-system');
   clear(le);

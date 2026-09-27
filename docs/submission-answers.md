@@ -4,7 +4,7 @@ Placeholders in [brackets] are for the team to fill in. Answers point to the fea
 
 ## Team and project
 - **Team or group name:** [TEAM NAME]
-- **Solution title:** [PROJECT NAME] — local decisions, shared rules, human oversight for crowded orbit
+- **Solution title:** [PROJECT NAME] — local decisions, a shared safety layer, human oversight for crowded orbit
 - **Team members:** [NAMES]
 - **Location:** [CITY / REGION, COUNTRY for each member]
 - **Organisation, university or community:** [ORGANISATION]
@@ -22,7 +22,7 @@ Placeholders in [brackets] are for the team to fill in. Answers point to the fea
 - Nobody waits for a message that may never be read, which is what happened with Aeolus and Starlink 44 in 2019.
 
 **Small operators and non-propulsive CubeSats:**
-- The rules treat them as vulnerable users. Low fuel, debris and crewed vehicles hold course first.
+- The safety layer treats them as vulnerable users. Low fuel, debris and crewed vehicles hold course first.
 - Emerging-nation operators get a discounted fee.
 
 **Crewed missions:**
@@ -77,7 +77,7 @@ Orbit is treated as a commons with a shared, double-entry ledger.
 - Free-riders lose priority.
 - Balances always sum to zero, so nobody's safety is paid for invisibly by someone else.
 
-**Right-of-way rules protect the vulnerable first:** debris cannot move, crewed vehicles hold course, and low-fuel CubeSats are spared.
+**The safety layer protects the vulnerable first:** debris cannot move, crewed vehicles hold course, and low-fuel CubeSats are spared.
 
 **A charter of obligations:** operators, AI developers, data providers and states each owe something specific. Everyone owes those not yet launched a usable orbit, with no net addition to long-lived debris.
 
@@ -87,18 +87,18 @@ Orbit is treated as a commons with a shared, double-entry ledger.
 **What the AI does:**
 - Every satellite runs the same small AI policy, trained with multi-agent reinforcement learning.
 - It proposes when and how to burn.
-- It never acts alone. A safety shield checks every proposal against the shared rules, and the rules win when they disagree.
+- It never acts alone. A safety layer checks every proposal: a fixed priority check on shared data plus hard triggers. If the AI proposes something the safety layer forbids, the safe action is executed and the conflict is logged.
 
 **When a human decides:**
-- Hard triggers always go to a human: a crewed vehicle, high collision probability, a rule conflict or low AI confidence.
+- Hard triggers always go to a human: a crewed vehicle, high collision probability, a safety-layer conflict or low AI confidence.
 - The AI cannot switch these triggers off, and training never rewards avoiding them.
 - A human can approve, override (before both sides commit) or stop. Every decision is logged.
 
 **Who stays accountable:**
-- The responsibility matrix assigns each failure to the operator, the AI developer, the data provider, the licensing state or the rule-setting body.
-- The network cannot change its own rules. Updates need approval from an independent incident board.
+- The responsibility matrix assigns each failure to the operator, the AI developer, the data provider, the licensing state or the body that sets the safety layer.
+- The network cannot change its own safety layer or model. Updates need approval from an independent incident board.
 
-**Evaluation result:** on 1,000 held-out scenarios, the AI behind the shield had 0.7% collisions against 1.0% for the rules alone, at the same fuel use. Collision probabilities are illustrative.
+**Evaluation result:** on 10,000 held-out scenarios built from real ESA conjunction data, the onboard AI ended 99.34% of them safely (95% CI 99.16–99.48%) against 92.09% if nobody acts, and resolved 91.66% of the encounters that would otherwise have collided, using 0.044 m/s of fuel per event. The same network runs live in the browser. Collision probabilities are illustrative.
 
 ## From Obligation to Action (1)
 *What could actually happen next, and who could do it?*
@@ -111,7 +111,7 @@ Orbit is treated as a commons with a shared, double-entry ledger.
 - Pilot the shared ledger alongside existing collision-avoidance and data-sharing services, first as a read-only record of who yielded.
 
 **Regulators and standards bodies:**
-- Use the Who-Yields priority order as a starting point for harmonised right-of-way standards.
+- Use the safety layer's priority order as a starting point for harmonised right-of-way standards.
 - Include how a satellite's class and purpose are verified at licensing.
 
 ## From Obligation to Action (2)
@@ -119,7 +119,7 @@ Orbit is treated as a commons with a shared, double-entry ledger.
 
 **Universities** (for example, Tama University's work on mixed-traffic ethics):
 - Run the simulator as a testbed.
-- Ask operators, students and the public which priority rules they accept, and where they would draw the line for human review.
+- Ask operators, students and the public which priorities they accept, and where they would draw the line for human review.
 
 **AI developers:**
 - Publish declared operating domains and adopt shared held-out test scenarios.
@@ -127,7 +127,7 @@ Orbit is treated as a commons with a shared, double-entry ledger.
 **The team:**
 - Open the repository.
 - Add real covariance data where available.
-- Invite critique of the rules and the ledger.
+- Invite critique of the safety layer and the ledger.
 
 ## AI use
 *Did you use AI? Which tools, what for, what did you check independently, and is AI part of your solution?*
@@ -137,14 +137,14 @@ Orbit is treated as a commons with a shared, double-entry ledger.
 - Used for: research summaries, drafting documents, and writing and testing code.
 
 **Checked independently:**
-- The rules, ledger and shield logic are covered by automated example-based and property-based tests.
+- The safety layer, ledger and handshake logic are covered by automated example-based and property-based tests.
 - The GPU simulator is checked against an independent reference implementation.
-- The browser rules and policy match the Python versions exactly.
-- Evaluation results come from 1,000 held-out scenarios.
+- The browser safety layer, policy and live simulator match the Python versions (checked automatically).
+- Evaluation results come from 10,000 held-out scenarios with 95% confidence intervals.
 - Key facts were checked against their sources: the 2019 ESA account and the FCC manoeuvre reports.
 
 **AI inside the solution:**
-- a small multi-agent reinforcement-learning policy, trained by the team and always behind the rules shield
+- a small multi-agent reinforcement-learning policy, trained by the team and always inside the safety layer
 - an existing open-weight language model, run locally, that wrote the plain-English explanations shown on the site
 
 ## Sharing restrictions

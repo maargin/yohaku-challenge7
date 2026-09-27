@@ -45,11 +45,6 @@ export function init() {
     store.set('variant', b.dataset.variant);
     select(id);
   }));
-  const hasAi = eps.some((e) => e.variant === 'ai');
-  if (!hasAi) {
-    store.set('variant', 'rules');
-    $$('[data-variant]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.variant === 'rules')));
-  }
   store.set('episodeId', ids.includes('crewed-vs-commercial') ? 'crewed-vs-commercial' : ids[0]);
   renderList();
 }

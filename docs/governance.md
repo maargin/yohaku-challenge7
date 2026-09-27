@@ -14,13 +14,13 @@ An AI system cannot be held liable, so every decision the network makes must tra
 | Silent or ignored handshake | **Primary**: presumed responsible | — | — | Enforcement | Records repeat offenders |
 | False class or purpose declaration | **Primary**: evidence entry in the ledger | — | — | **Primary**: verifies registration | Publishes the registry standard |
 | Human override that causes harm | **Primary**: the decision is logged with the actor | — | — | Supervision | — |
-| Rules gap (the rules gave no good answer) | Shared | Shared | — | Shared | **Primary**: owns the rules |
+| Safety-layer gap (no good answer existed) | Shared | Shared | — | Shared | **Primary**: owns the safety layer |
 
 This follows the principle of the Outer Space Treaty (Art. VI): states remain responsible for the national activities they license. The matrix adds who inside that system answers for which failure.
 
 ## 2. Learning governance
 
-The network learns from past encounters, but it never changes its own rules or model.
+The network learns from past encounters, but it never changes its own safety layer or model.
 
 1. **Every case is logged:** the declarations, verdict, handshake messages, human decisions and outcome.
 2. **Anyone can propose an update:** an operator, an AI developer or a regulator, supported by the logged cases.

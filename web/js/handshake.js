@@ -1,4 +1,4 @@
-// Who-Yields verdict card + handshake message log + autonomy ladder + decision log + live announcements.
+// Safety-layer decision card + handshake message log + autonomy ladder + decision log + live announcements.
 import { store } from './state.js';
 import { currentEpisode, currentSteps } from './playback.js';
 import { latestVerdict, messagesUpTo } from './playbackCore.js';
@@ -10,7 +10,7 @@ const LADDER_TEXT = {
   L1: 'L1 — humans decide; the AI advises.',
   L2: 'L2 — human approval required before acting.',
   L3: 'L3 — the AI acts; a human is notified and can veto.',
-  L4: 'L4 — the AI acts within the rules.',
+  L4: 'L4 — the AI acts on its own, inside the safety layer.',
 };
 
 function nameOf(ep, id) {
@@ -35,13 +35,13 @@ function render() {
   const human = branch && i >= branch.index ? branch.choice : null;
   if (human === 'override' && v) {
     $('#verdict-title').textContent = `${nameOf(ep, v.yielder)} yields (human override)`;
-    $('#verdict-reason').textContent = `A human overrode rule ${v.rule} before either side committed. The change went back through the handshake and is logged.`;
+    $('#verdict-reason').textContent = `A human overrode the safety-layer decision before either side committed. The change went back through the handshake and is logged.`;
   } else if (human === 'stop') {
     $('#verdict-title').textContent = 'Both hold (human stop)';
     $('#verdict-reason').textContent = 'A human stopped the manoeuvre. Both satellites hold course; the decision and its outcome are logged.';
   } else {
     $('#verdict-title').textContent = !v ? 'Waiting for detection' : v.yielder ? `${nameOf(ep, v.yielder)} yields` : 'Nobody can move';
-    $('#verdict-reason').textContent = v ? `Rule ${v.rule} — ${v.reason}. Both sides computed this from shared handshake data.` : 'No close approach detected yet.';
+    $('#verdict-reason').textContent = v ? `${v.reason[0].toUpperCase()}${v.reason.slice(1)}. Both onboard AIs computed this from shared handshake data.` : 'No close approach detected yet.';
   }
   const log = $('#handshake-log');
   clear(log);
@@ -64,7 +64,7 @@ function render() {
   const banner = $('#note-banner');
   banner.textContent = s && s.note ? s.note : '';
   banner.style.display = s && s.note ? 'block' : 'none';
-  const say = v ? `${tMinus(s.t_min)}. ${v.yielder ? `${nameOf(ep, v.yielder)} yields under rule ${v.rule}` : 'Nobody can move'}.${s.escalation ? ` Escalated: ${s.escalation.trigger}, level ${s.escalation.level}.` : ''}` : '';
+  const say = v ? `${tMinus(s.t_min)}. ${v.yielder ? `${nameOf(ep, v.yielder)} yields: ${v.reason}` : 'Nobody can move'}.${s.escalation ? ` Escalated: ${s.escalation.trigger}, level ${s.escalation.level}.` : ''}` : '';
   if (say && say !== lastAnnounced) { $('#announcer').textContent = say; lastAnnounced = say; }
 }
 

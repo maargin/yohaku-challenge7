@@ -1,6 +1,6 @@
 {
   "id": "crewed-vs-commercial",
-  "title": "A crewed station and a commercial satellite: the rules decide, a human approves",
+  "title": "A crewed station and a commercial satellite: the safety layer decides, a human approves",
   "agents": [
     {"id": "station", "name": "Crewed station", "operator": "Station Partners", "fuel": 0.6},
     {"id": "kst-2210", "name": "KST-2210", "operator": "Kestrel Constellation", "fuel": 0.72}

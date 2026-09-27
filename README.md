@@ -2,7 +2,7 @@
 
 A prototype for coordinating collision avoidance between satellites run by different operators, with no central controller:
 
-- every satellite applies the same **Who-Yields rules** to shared handshake data, so both sides reach the same verdict;
+- every satellite runs the same **onboard AI** inside a shared **safety layer** (a fixed priority check on handshake data plus hard triggers), so both sides reach the same decision;
 - a **handshake protocol** (PROPOSE / ACK / DO-NOT-MOVE / EXECUTED / ESCALATE) replaces email;
 - a double-entry **fairness ledger** records who absorbs the cost of staying safe;
 - a **safety shield** escalates high-stakes cases to a human, and no AI policy can switch those triggers off;
@@ -13,7 +13,7 @@ The full specification is in [`docs/PRD.md`](docs/PRD.md).
 ## Layout
 | Path | Contents |
 |---|---|
-| `sim/` | Python: contracts, rules, handshake, ledger, shield, episode simulator, data builder (and later the RL environment and training) |
+| `sim/` | Python: contracts, safety layer (priority check + triggers), handshake, ledger, episode simulator, data builder, GPU environment, MAPPO training and evaluation |
 | `schema/` | JSON Schemas for every data file the website reads |
 | `web/` | Static website (no build step) |
 | `tools/` | Helper scripts (parity cases, SRI hashes) |
@@ -24,7 +24,7 @@ The full specification is in [`docs/PRD.md`](docs/PRD.md).
 pip install -r requirements.txt
 npm install
 pytest                     # example-based + property-based tests (Hypothesis)
-npm test                   # JS rules tests + Python/JS parity (fast-check)
+npm test                   # JS tests: safety layer, policy and live-simulator parity with Python
 python -m sim.make_web_data --celestrak data/raw/active.json --socrates data/raw/socrates.csv
 python -m http.server 8000 # then open http://localhost:8000/web/
 ```

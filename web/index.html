@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>the System · Orbital coordination prototype</title>
-  <meta name="description" content="A prototype for coordinating satellite collision avoidance across operators: shared right-of-way rules, a machine handshake, a fairness ledger and human oversight.">
+  <meta name="description" content="A prototype for coordinating satellite collision avoidance across operators: a shared onboard AI with a safety layer, a machine handshake, a fairness ledger and human oversight.">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/app.css">
   <script src="vendor/globe.gl.min.js" defer></script>
@@ -19,6 +19,7 @@
   <a class="brand" href="#top">the System</a>
   <nav class="site-nav" aria-label="Sections">
     <a href="#mission">Mission Control</a>
+    <a href="#live">Live</a>
     <a href="#replay">2019 replay</a>
     <a href="#results">Results</a>
     <a href="#how">How it works</a>
@@ -45,8 +46,8 @@
     </svg>
     <div class="hero-copy">
       <div class="kicker">YOHAKU 2026 · Challenge 7</div>
-      <h1 id="hero-title">Orbit has no traffic rules. We built some.</h1>
-      <p>Every satellite carries the same small AI. Each one senses danger locally, announces its plan to its neighbour, follows shared right-of-way rules, and asks a human when the stakes are high. A shared ledger keeps the cost of staying safe fair.</p>
+      <h1 id="hero-title">Orbit has no traffic control. We put one on every satellite.</h1>
+      <p>Every satellite carries the same small AI. Each one senses danger locally, announces its plan to its neighbour, follows a shared safety layer, and asks a human when the stakes are high. A shared ledger keeps the cost of staying safe fair.</p>
       <div class="stats">
         <div class="stat"><b>207,152</b><span>Starlink avoidance manoeuvres reported in six months (Dec 2025–May 2026)</span></div>
         <div class="stat"><b>2019</b><span>ESA's Aeolus dodged Starlink 44 alone after a follow-up message went unseen</span></div>
@@ -55,7 +56,7 @@
         <a class="btn btn-primary btn-pill" href="#mission" data-testid="hero-launch-demo">Launch demo</a>
         <a class="btn btn-pill" href="#replay" data-testid="hero-replay-link">Watch the 2019 replay</a>
       </div>
-      <p class="small muted">Local decisions. Shared rules. Human oversight.</p>
+      <p class="small muted">Local decisions. Shared safety layer. Human oversight.</p>
     </div>
   </section>
 
@@ -72,10 +73,7 @@
         <span class="clock" id="clock" aria-live="off">T−240 min</span>
         <label>Scenario <select id="scenario" data-testid="scenario-picker"></select></label>
         <span class="spacer"></span>
-        <div class="seg" role="group" aria-label="Decision mode">
-          <button class="btn btn-pill" data-variant="rules" data-testid="mode-rules" aria-pressed="false">Rules only</button>
-          <button class="btn btn-pill" data-variant="ai" data-testid="mode-ai" aria-pressed="true">AI + rules</button>
-        </div>
+        <a class="btn btn-pill" href="#live" data-testid="live-link">Try your own encounter</a>
         <a class="btn" href="#replay" data-testid="replay-2019-button">Replay 2019</a>
         <button class="btn btn-danger" id="kessler-btn" data-testid="kessler-button">What if we fail?</button>
       </div>
@@ -89,7 +87,7 @@
             <div class="ladder" id="ladder" aria-label="Autonomy level">
               <span data-level="L0">L0</span><span data-level="L1">L1</span><span data-level="L2">L2</span><span data-level="L3">L3</span><span data-level="L4">L4</span>
             </div>
-            <div class="small muted" id="ladder-text">L4 — the AI acts within the rules.</div>
+            <div class="small muted" id="ladder-text">L4 — the AI acts on its own, inside the safety layer.</div>
           </div>
         </aside>
         <div class="globe-wrap" aria-label="Globe of tracked objects">
@@ -114,7 +112,7 @@
           <div class="tabpanel" id="panel-brain" role="tabpanel" aria-labelledby="tab-brain" hidden></div>
           <div class="tabpanel" id="panel-handshake" role="tabpanel" aria-labelledby="tab-handshake">
             <div class="card" id="verdict-card">
-              <div class="panel-title">Who-Yields verdict</div>
+              <div class="panel-title">Safety-layer decision</div>
               <div class="verdict-title" id="verdict-title">Waiting for detection</div>
               <div class="small" id="verdict-reason"></div>
             </div>
@@ -149,11 +147,21 @@
     </div>
   </dialog>
 
+  <section class="section" id="live" aria-labelledby="live-title">
+    <div class="section-head">
+      <div class="kicker">Live · runs in your browser</div>
+      <h2 id="live-title">Set up an encounter. Watch the AI decide.</h2>
+      <p>The same trained network that produced the results below runs here on your device, step by step, behind the same safety layer. Change the satellites, their fuel or the tracking uncertainty and see what changes.</p>
+    </div>
+    <form id="live-form" class="live-form" data-testid="live-form"></form>
+    <div id="live-output" class="live-output" aria-live="polite"></div>
+  </section>
+
   <section class="section" id="replay" aria-labelledby="replay-title">
     <div class="section-head">
       <div class="kicker">September 2019 · ESA Aeolus × Starlink 44</div>
       <h2 id="replay-title">Same encounter, two worlds</h2>
-      <p>Scripted from ESA's published timeline (compressed). Left: what happened. Right: the same encounter with a machine handshake and shared rules.</p>
+      <p>Scripted from ESA's published timeline (compressed). Left: what happened. Right: the same encounter with a machine handshake and the shared onboard AI.</p>
     </div>
     <div class="replay-grid">
       <div class="world email" aria-labelledby="email-h"><h3 id="email-h">Email world (what happened)</h3><ol id="replay-email"></ol></div>
@@ -167,7 +175,7 @@
 
   <section class="section" id="results" aria-labelledby="results-title">
     <div class="section-head">
-      <div class="kicker">Results · 1,000 held-out scenarios</div>
+      <div class="kicker">Results · 10,000 held-out scenarios</div>
       <h2 id="results-title">Does the shared AI actually help?</h2>
       <p id="results-summary">Loading results…</p>
     </div>
@@ -183,13 +191,13 @@
   <section class="section" id="how" aria-labelledby="how-title">
     <div class="section-head">
       <div class="kicker">How it works</div>
-      <h2 id="how-title">Local decisions, shared rules, human oversight</h2>
+      <h2 id="how-title">Local decisions, a shared safety layer, human oversight</h2>
     </div>
     <div class="flow">
       <div class="card"><h3>1 · Sense locally</h3><p class="small" style="margin: 0">Each satellite's onboard AI watches its most dangerous neighbour: time to closest approach, miss distance, uncertainty, fuel.</p></div>
       <div class="card"><h3>2 · Announce</h3><p class="small" style="margin: 0">Both sides send PROPOSE with their registered class and fuel. Silence counts: a satellite that never answers is treated as unable to move.</p></div>
-      <div class="card"><h3>3 · Same rules, same answer</h3><p class="small" style="margin: 0">Both compute the same Who-Yields verdict from shared data: debris never moves, crewed holds, low fuel is protected, then fair tie-breaks.</p></div>
-      <div class="card"><h3>4 · Shield, human, ledger</h3><p class="small" style="margin: 0">A safety shield checks every AI action. High stakes go to a human. The ledger credits whoever yields and charges free-riders.</p></div>
+      <div class="card"><h3>3 · Same data, same answer</h3><p class="small" style="margin: 0">Both AIs compute the same priority from shared data: debris never moves, crewed holds, low fuel is protected, then fair tie-breaks.</p></div>
+      <div class="card"><h3>4 · Safety layer, human, ledger</h3><p class="small" style="margin: 0">A safety layer checks every AI action. High stakes go to a human. The ledger credits whoever yields and charges free-riders.</p></div>
     </div>
   </section>
 
@@ -208,7 +216,7 @@
           <div><b>Ignored or silent handshake</b> — that operator, presumed responsible.</div>
           <div><b>False class declaration</b> — the declaring operator; the licensing state supervises.</div>
           <div><b>Human override that causes harm</b> — the operator whose person decided; every decision is logged with its actor.</div>
-          <div><b>Evidence of fault</b> — whether the rules were followed, and what the ledger and decision log show.</div>
+          <div><b>Evidence of fault</b> — whether the safety layer was respected, and what the ledger and decision log show.</div>
         </div>
       </div>
       <div>
@@ -220,7 +228,7 @@
           <div class="card hl">Independent Orbital Incident Board approves</div><span aria-hidden="true">→</span>
           <div class="card">New version recorded</div>
         </div>
-        <p class="small muted" style="margin-top: 14px">No rule or model changes by itself. Like aviation incident boards, the board reviews cases and approves changes, and every version stays on record.</p>
+        <p class="small muted" style="margin-top: 14px">Neither the safety layer nor the model changes by itself. Like aviation incident boards, the board reviews cases and approves changes, and every version stays on record.</p>
       </div>
     </div>
     <div class="charter" aria-labelledby="charter-title">
