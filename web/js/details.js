@@ -16,6 +16,7 @@ import * as replay from './replay.js';
 import * as results from './results.js';
 import * as live from './live.js';
 import * as globe from './globe.js';
+import * as tour from './tour.js';
 
 function tabs() {
   const buttons = $$('[role="tab"]');
@@ -53,6 +54,7 @@ async function start() {
     .forEach(([name, mod]) => guard(name, mod.init)());
   startGlobe(globe);
   kesslerButton(globe);
+  guard('tour', () => tour.init(tour.DETAILS_STEPS, { auto: false }))();
   log.info('details ready', { episodes: store.get('data').episodes.length });
 }
 

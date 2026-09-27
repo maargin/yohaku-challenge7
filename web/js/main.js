@@ -14,6 +14,7 @@ import * as timeline from './timeline.js';
 import * as approach from './approach.js';
 import * as flow from './flow.js';
 import * as globe from './globe.js';
+import * as tour from './tour.js';
 
 async function start() {
   guard('theme', theme.init)();
@@ -27,6 +28,7 @@ async function start() {
     .forEach(([name, mod]) => guard(name, mod.init)());
   startGlobe(globe);
   kesslerButton(globe);
+  guard('tour', () => tour.init(tour.ENCOUNTER_STEPS))();
   log.info('encounter ready', { episodes: store.get('data').episodes.length });
 }
 
