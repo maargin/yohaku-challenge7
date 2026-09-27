@@ -2,7 +2,7 @@
 // behind the same safety layer that produced the published results.
 import { store } from './state.js';
 import { h, clear, $ } from './dom.js';
-import { createEncounter, HOLD } from './liveEnv.js';
+import { createEncounter, HOLD, OBS_LABELS, priorityReason, working } from './liveEnv.js';
 import { ACTION_LABELS, pcText, tMinus } from './format.js';
 
 export const PRESETS = {
@@ -100,7 +100,9 @@ function validRun(j) {
     && j.steps.every((s) => num(s.t) && num(s.miss) && num(s.pc) && [s.iYields, s.probs, s.chosen, s.executed, s.dv, s.why].every(Array.isArray)
       && s.probs.length === 2 && s.probs.every((row) => Array.isArray(row) && row.length === ACTION_LABELS.length && row.every(num))
       && s.chosen.every((a) => Number.isInteger(a) && a >= 0 && a < ACTION_LABELS.length)
-      && s.executed.every((a) => Number.isInteger(a) && a >= 0 && a < ACTION_LABELS.length) && s.dv.every(num));
+      && s.executed.every((a) => Number.isInteger(a) && a >= 0 && a < ACTION_LABELS.length) && s.dv.every(num)
+      && (s.observations === undefined || (Array.isArray(s.observations) && s.observations.length === 2
+        && s.observations.every((row) => Array.isArray(row) && row.length === OBS_LABELS.length && row.every(num)))));
 }
 
 // Ask the simulator on the server to run the encounter; null when it is absent, slow or answers badly.
@@ -166,7 +168,49 @@ function verdictText(out, spec) {
   return parts;
 }
 
-function stepRow(s, k, names) {
+const fmt = (x, d = 0) => Number(x).toLocaleString('en-GB', { maximumFractionDigits: d, minimumFractionDigits: d });
+
+function line(text) { return h('div', { class: 'small mono', text }); }
+
+// Everything behind one step: inputs, network output, physics with numbers, and the safety layer's checks.
+function workingPanel(spec, s, names) {
+  const w = working(spec, s);
+  const cards = [];
+  if (Array.isArray(s.observations) && s.observations.length === 2) {
+    cards.push(h('div', { class: 'card' }, h('span', { class: 'small muted', text: '1 · What each onboard AI sees (24 inputs, as fed to the network)' }),
+      h('table', { class: 'obs-table' }, h('thead', {}, h('tr', {}, ...['Input', names[0], names[1]].map((t) => h('th', { scope: 'col', text: t })))),
+        h('tbody', {}, ...OBS_LABELS.map((label, f) => h('tr', {}, h('td', { text: label }),
+          ...[0, 1].map((i) => h('td', { class: 'mono', text: fmt(s.observations[i][f], 3) }))))))));
+  }
+  cards.push(h('div', { class: 'card' }, h('span', { class: 'small muted', text: '2 · The network: 24 inputs → 64 → 64 → 7 (tanh), then softmax' }),
+    ...[0, 1].map((i) => h('div', {}, h('b', { class: 'small', text: `${names[i]} proposes ${ACTION_LABELS[s.chosen[i]]}` }),
+      ...s.probs[i].map((p, a) => line(`${a === s.chosen[i] ? '▶' : ' '} ${ACTION_LABELS[a].padEnd(19)} ${fmt(p * 100, 1).padStart(5)}%`))))));
+  const phys = [
+    line(`σ(t) = ${fmt(spec.sigma_min_m)} + (${fmt(spec.sigma0_m)} − ${fmt(spec.sigma_min_m)}) × ${fmt(w.frac, 2)} = ${fmt(w.sigma)} m`),
+    line(`Pc = R²/(2σ²) · exp(−d²/(2σ²)) with R = ${w.radius} m, d = ${fmt(s.miss)} m → ${pcText(w.pc)}`),
+    line(`Dangerous: Pc > 1e-4 → ${w.pc > w.manoeuvrePc ? 'yes' : 'no'}; hidden by uncertainty (σ > 2d and worst-case Pc ${pcText(w.worst)} > 1e-3) → ${w.diluted ? 'yes' : 'no'} ⇒ ${w.dangerous ? 'DANGEROUS' : 'not dangerous'}`),
+  ];
+  if (w.burns.length) {
+    phys.push(line(`lead time = ${fmt(-s.t)} min = ${fmt(w.lead)} s`));
+    w.burns.forEach((b) => phys.push(line(b.kind === 'radial'
+      ? `${names[b.agent]}: radial shift = 2 × ${fmt(b.dv, 2)} / 0.0011 × 0.6 = ${fmt(b.shift)} m`
+      : `${names[b.agent]}: along-track shift = 3 × ${fmt(b.dv, 2)} m/s × ${fmt(w.lead)} s × 0.6 = ${fmt(b.shift)} m (${b.kind})`)));
+    if (w.missAfter !== null) phys.push(line(`closest approach after = √(${fmt(spec.p0_m)}² + (${fmt(w.alongBefore)} ${w.alongAfter - w.alongBefore >= 0 ? '+' : '−'} ${fmt(Math.abs(w.alongAfter - w.alongBefore))})²) = ${fmt(w.missAfter)} m`));
+  } else {
+    phys.push(line('No burn this step, so the geometry is unchanged.'));
+  }
+  cards.push(h('div', { class: 'card' }, h('span', { class: 'small muted', text: '3 · Physics of this step (linearised, illustrative)' }), ...phys));
+  const pr = priorityReason(spec.agents[0], spec.agents[1]);
+  const safety = [
+    line(`Priority check: ${pr.yielder === null ? 'nobody can move' : `${names[pr.yielder]} must move, ${names[1 - pr.yielder]} holds course`} — ${pr.reason}`),
+    ...[0, 1].map((i) => line(`${names[i]}: proposed ${ACTION_LABELS[s.chosen[i]]} → executed ${ACTION_LABELS[s.executed[i]]}${s.why[i] ? ` (${s.why[i]})` : ''}`)),
+    line(`Deadline T−60 reached: ${w.deadline ? 'yes' : 'no'}; dangerous: ${w.dangerous ? 'yes' : 'no'} → a yielder that has not burned yet is forced to burn: ${w.deadline && w.dangerous ? 'yes' : 'no'}`),
+  ];
+  cards.push(h('div', { class: 'card' }, h('span', { class: 'small muted', text: '4 · Safety layer' }), ...safety));
+  return h('div', { class: 'working' }, ...cards);
+}
+
+function stepRow(s, k, names, spec) {
   const cells = [tMinus(s.t), `${s.miss.toFixed(0)} m`, pcText(s.pc)];
   [0, 1].forEach((i) => {
     const conf = Math.round(s.probs[i][s.chosen[i]] * 100);
@@ -175,7 +219,18 @@ function stepRow(s, k, names) {
     cells.push(proposed, changed ? `${ACTION_LABELS[s.executed[i]]} — ${s.why[i] ?? 'held'}` : (s.executed[i] === HOLD ? '—' : 'as proposed'));
   });
   const burned = s.dv.some((d) => d > 0);
-  return h('tr', { class: burned ? 'live-burn' : null, 'data-testid': `live-step-${k}` }, ...cells.map((c, j) => h('td', { text: c, style: j === 0 ? { fontFamily: 'var(--font-mono)' } : {} })));
+  const detail = h('tr', { class: 'live-detail', hidden: '' }, h('td', { colspan: String(cells.length + 1) }));
+  const toggle = h('button', { type: 'button', class: 'btn btn-small', 'aria-expanded': 'false', 'aria-label': `Show the working for ${tMinus(s.t)}`, text: 'Working' });
+  toggle.addEventListener('click', () => {
+    const open = detail.hidden;
+    if (open && !detail.firstChild.firstChild) detail.firstChild.append(workingPanel(spec, s, names));
+    detail.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.textContent = open ? 'Hide' : 'Working';
+  });
+  const row = h('tr', { class: burned ? 'live-burn' : null, 'data-testid': `live-step-${k}` }, h('td', {}, toggle),
+    ...cells.map((c, j) => h('td', { text: c, style: j === 0 ? { fontFamily: 'var(--font-mono)' } : {} })));
+  return [row, detail];
 }
 
 export function init() {
@@ -220,11 +275,11 @@ export function init() {
       h('div', { class: `card live-verdict ${result.collision ? 'bad' : 'ok'}`, 'data-testid': 'live-verdict' },
         ...verdictText(result, spec).map((t, i) => h(i === 0 ? 'b' : 'span', { class: i === 0 ? 'verdict-title' : 'small', text: t }))),
       h('div', { class: 'table-wrap' }, h('table', { class: 'results live-table' },
-        h('thead', {}, h('tr', {}, ...['Time', 'Miss', 'Collision prob.', `${names[0]} proposes`, 'Safety layer', `${names[1]} proposes`, 'Safety layer']
+        h('thead', {}, h('tr', {}, ...['', 'Time', 'Miss', 'Collision prob.', `${names[0]} proposes`, 'Safety layer', `${names[1]} proposes`, 'Safety layer']
           .map((t) => h('th', { scope: 'col', text: t })))),
-        h('tbody', {}, ...result.steps.map((s, k) => stepRow(s, k, names))))),
+        h('tbody', {}, ...result.steps.flatMap((s, k) => stepRow(s, k, names, spec))))),
       live.explain ? explainCard(spec, result) : null,
-      h('p', { class: 'small muted', text: `Each row is one 10-minute step. "Proposes" is the AI's own choice with its confidence; "Safety layer" shows when that choice was changed and why.${live.explain ? '' : ' The plain-language explanation is generated offline for the recorded scenarios and is not available here.'}` }),
+      h('p', { class: 'small muted', text: `Each row is one 10-minute step; press "Working" to see the inputs, the network's output, the physics with its numbers and the safety layer's checks for that step. "Proposes" is the AI's own choice with its confidence; "Safety layer" shows when that choice was changed and why.${live.explain ? '' : ' The plain-language explanation is generated offline for the recorded scenarios and is not available here.'}` }),
     );
     out.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });

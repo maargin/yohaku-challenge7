@@ -41,3 +41,34 @@ test('a head-on pass with nobody moving collides; the AI avoids it', () => {
   assert.equal(out.collision, false);
   assert.ok(out.steps.some((s) => s.dv.some((d) => d > 0)));
 });
+
+import { working, priorityReason } from '../js/liveEnv.js';
+
+test('the working shown for a step reproduces the simulator numbers', () => {
+  let checked = 0;
+  for (const c of cases) {
+    const enc = createEncounter(c);
+    const spec = { ...c };
+    for (let k = 0; k < STEPS; k += 1) {
+      const s = enc.step(policy);
+      const w = working(spec, s);
+      assert.ok(Math.abs(w.sigma - s.sigma) < 1e-6, 'sigma');
+      assert.ok(Math.abs(w.pc - s.pc) <= 1e-12 + 1e-9 * s.pc, 'pc');
+      assert.equal(w.dangerous, s.danger, 'danger');
+      assert.ok(Math.abs(w.missAfter - s.missAfter) < 1e-6, `miss after step ${k}`);
+      checked += 1;
+    }
+  }
+  assert.ok(checked > 100);
+});
+
+test('the priority reason names the same yielder as the safety layer', () => {
+  for (const c of cases) {
+    const enc = createEncounter(c);
+    const snap = enc.snapshot();
+    const pr = priorityReason(c.agents[0], c.agents[1]);
+    const y = snap.iYields.indexOf(true);
+    assert.equal(pr.yielder, y < 0 ? null : y);
+    assert.ok(pr.reason.length > 0);
+  }
+});

@@ -193,3 +193,13 @@ footer { padding: 28px 64px; color: var(--text-4); font-size: 13px; }
 .live-table tr.live-burn td { background: color-mix(in srgb, var(--accent-soft) 60%, transparent); }
 @media (max-width: 1100px) { .live-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .live-grid { grid-template-columns: 1fr; } }
+
+.btn-small { min-height: 30px; padding: 0 10px; font-size: 12px; }
+.live-detail td { background: var(--surface-2); padding: 12px; }
+.working { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.working .card { gap: 4px; }
+.working .mono { white-space: pre-wrap; font-size: 12px; line-height: 1.5; }
+.obs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.obs-table th, .obs-table td { text-align: left; padding: 2px 6px; border-bottom: 1px solid var(--line); white-space: normal; }
+.obs-table td.mono { text-align: right; }
+@media (max-width: 900px) { .working { grid-template-columns: 1fr; } }

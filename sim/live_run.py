@@ -88,6 +88,7 @@ def run_live(spec, actor, norm, device="cpu"):
             reasons.append(REASONS[1])
         if bool(env.silent[0, :2].any()) and REASONS[2] not in reasons:
             reasons.append(REASONS[2])
+        obs_before = obs
         with torch.no_grad():
             probs = torch.softmax(actor(norm(obs)), -1)[0, :2]
         chosen = probs.argmax(-1)
@@ -99,6 +100,7 @@ def run_live(spec, actor, norm, device="cpu"):
         chosen_l = chosen.tolist()
         steps.append({
             "t": t, "miss": miss, "sigma": sigma, "pc": pc, "danger": danger, "iYields": iy,
+            "observations": [[round(x, 6) for x in row] for row in obs_before[0, :2].tolist()],
             "probs": [[round(p, 6) for p in row] for row in probs.tolist()], "chosen": chosen_l, "executed": executed,
             "dv": dv, "why": [_why(chosen_l[k], executed[k], iy[k], burned[k], t, danger, acting[k]) for k in range(2)],
             "missAfter": float(env.miss[0, 0, 1]),

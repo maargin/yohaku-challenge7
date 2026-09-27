@@ -58,6 +58,60 @@ function yields(a, b, iLower) {
   return [true, tie];
 }
 
+// The same priority order as yields(), with the reason for the page. Agent 0 has the lower ID.
+export function priorityReason(a, b) {
+  const nm = (x) => x.capability === 'debris' || x.fuel <= 0 || x.silent;
+  const one = (pred) => (pred(a) && !pred(b) ? 0 : pred(b) && !pred(a) ? 1 : null);
+  const tie = () => (Math.abs(a.fuel - b.fuel) > FUEL_TIE ? [a.fuel > b.fuel ? 0 : 1, 'tie-break: the larger fuel margin moves']
+    : Math.abs(a.ledger - b.ledger) > LEDGER_TIE ? [a.ledger < b.ledger ? 0 : 1, 'tie-break: the lower ledger balance moves']
+      : [0, 'tie-break: deterministic order of IDs']);
+  let k;
+  if (nm(a) && nm(b)) return { yielder: null, reason: 'neither object can move (debris, out of fuel or not answering)' };
+  if ((k = one(nm)) !== null) return { yielder: 1 - k, reason: 'one object cannot move (debris, out of fuel or not answering), so the other must' };
+  const cr = (x) => x.capability === 'crewed';
+  if ((k = one(cr)) !== null) return { yielder: 1 - k, reason: 'a crewed vehicle holds course' };
+  if (cr(a) && cr(b)) { const [y, r] = tie(); return { yielder: y, reason: `both crewed; ${r}` }; }
+  if ((k = one((x) => x.fuel < LOW_FUEL)) !== null) return { yielder: 1 - k, reason: 'the satellite with less than 20% fuel holds course' };
+  if ((k = one((x) => x.ledger <= FREE_RIDER)) !== null) return { yielder: k, reason: 'a free-rider (ledger balance −3 or lower) loses priority' };
+  if ((k = one((x) => x.capability === 'autonomous')) !== null) return { yielder: k, reason: 'the more capable (autonomous) satellite moves' };
+  const pb = (x) => x.purpose === 'public_good';
+  const mixed = (pb(a) && b.purpose === 'commercial') || (pb(b) && a.purpose === 'commercial');
+  if (mixed && (k = one(pb)) !== null) return { yielder: 1 - k, reason: 'commercial yields to a public-good mission' };
+  const [y, r] = tie();
+  return { yielder: y, reason: r };
+}
+
+// The arithmetic behind one recorded step, with the intermediate numbers the page shows.
+export function working(spec, s) {
+  const frac = Math.max(0, Math.min(1, -s.t / HORIZON_MIN));
+  const sigma = spec.sigma_min_m + (spec.sigma0_m - spec.sigma_min_m) * frac;
+  const p = pc(s.miss, sigma);
+  const worst = pcWorst(s.miss);
+  const diluted = sigma > 2 * s.miss && worst > DILUTION_PC;
+  const dangerous = p > MANOEUVRE_PC || diluted;
+  const lead = -s.t * 60;
+  const coup = spec.coup ?? (spec.m0_m >= 0 ? 1 : -1);
+  const burns = s.dv.map((dv, i) => {
+    if (!(dv > 0)) return null;
+    const e = s.executed[i];
+    const kind = e === SMALL_CLOSE ? 'closing' : e === RADIAL ? 'radial' : 'opening';
+    const shift = kind === 'radial' ? 2 * dv / MEAN_MOTION * PROJECTION : ALONG_GAIN * dv * lead * PROJECTION;
+    return { agent: i, dv, kind, shift, signed: kind === 'closing' ? -shift : shift };
+  }).filter(Boolean);
+  const alongBefore = s.observations ? s.observations[0][1] * 1000 : null;
+  const alongAfter = alongBefore === null ? null : alongBefore + coup * burns.reduce((acc, b) => acc + b.signed, 0);
+  const missAfter = alongAfter === null ? null : Math.hypot(spec.p0_m, alongAfter);
+  return { frac, sigma, pc: p, worst, diluted, dangerous, lead, burns, alongBefore, alongAfter, missAfter,
+    deadline: s.t >= DEADLINE_MIN, radius: RADIUS_M, manoeuvrePc: MANOEUVRE_PC, dilutionPc: DILUTION_PC };
+}
+
+export const OBS_LABELS = ['Time to closest approach (fraction of 240 min)', 'Along-track separation (km)', 'Perpendicular offset (km)',
+  'Miss distance (km)', 'log10 of collision probability ÷ 10', 'Uncertainty now ÷ uncertainty at first warning',
+  'Own class: manoeuvrable', 'Own class: autonomous', 'Own class: crewed', 'Own fuel (0–1)', 'Own ledger ÷ 5',
+  'Threat class: debris', 'Threat class: autonomous', 'Threat class: crewed', 'Threat fuel (0–1)', 'Threat ledger ÷ 5',
+  'Threat intent: hold', 'Threat intent: burn', 'Threat intent: request', 'Threat intent: escalated',
+  'Safety layer says I must move', 'Own drift so far (km)', 'Nearest third object (÷ 5 km)', 'Threat does not answer'];
+
 const CAP_ONEHOT = { manoeuvrable: [1, 0, 0], autonomous: [0, 1, 0], crewed: [0, 0, 1], debris: [0, 0, 0] };
 const THREAT_ONEHOT = { debris: [1, 0, 0], autonomous: [0, 1, 0], crewed: [0, 0, 1], manoeuvrable: [0, 0, 0] };
 
