@@ -17,7 +17,7 @@
 - **GPU implementation:** batched on the GPU (4,096 clusters) and tested against a scalar reference implementation.
 - **Training:** MAPPO, one shared actor with a centralised critic. The curriculum runs debris → two satellites → 2–6 satellites, including crewed and silent ones. 3 seeds × 30 minutes on one RTX 5060 Ti, about 836 million steps each.
 - **Reward:** collision −100, risk-reduction shaping, secondary close pass −20, fuel, fairness, safety-layer conflicts, and repeat or unneeded burns. Hard-trigger escalations are never penalised.
-- **Live mode:** the same environment is ported to the browser for two satellites (`web/js/liveEnv.js`) and checked step by step against the GPU environment on recorded clusters.
+- **Live mode:** with the optional local server (`sim/live_server.py`) the simulator itself decides every scenario and live encounter on request and a local language model writes the explanations; without it, a browser port of the environment for two satellites (`web/js/liveEnv.js`, checked step by step against the GPU environment on recorded clusters) is used. Every live step can be opened to show the working: the 24 inputs, the network output, the physics with its numbers and the safety layer's checks (the shown numbers are tested against the simulator's record).
 
 ## Evaluation
 10,000 held-out clusters (30% safe passes with real Kelvins miss distances), 95% Wilson confidence intervals:

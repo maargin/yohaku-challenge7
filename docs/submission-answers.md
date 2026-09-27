@@ -145,7 +145,7 @@ Orbit is treated as a commons with a shared, double-entry ledger.
 
 **AI inside the solution:**
 - a small multi-agent reinforcement-learning policy, trained by the team and always inside the safety layer
-- an existing open-weight language model, run locally, that wrote the plain-English explanations shown on the site
+- an existing open-weight language model, run locally, that wrote the plain-English explanations shown on the site (the public site is static and shows pre-written explanations; the repository also contains a local server that lets the simulator decide scenarios and live encounters on request and the language model explain them live, which is what the video shows)
 
 ## Sharing restrictions
 None. The code, data sources and documents can be shared publicly.
